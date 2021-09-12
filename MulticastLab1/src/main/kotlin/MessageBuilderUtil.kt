@@ -1,29 +1,21 @@
-import java.io.InputStreamReader
 import java.nio.ByteBuffer
-import java.nio.charset.Charset
 import java.util.*
 
 object MessageBuilderUtil {
 
+    fun buildMessage(message: ByteArray): Message {
+        val mostSigBits = ByteUtils.bytesToLong(message.copyOfRange(0, Constants.UUID_LENGTH / 2))
+        val leastSigBits =
+            ByteUtils.bytesToLong(message.copyOfRange(Constants.UUID_LENGTH / 2, Constants.UUID_LENGTH))
+        val type = MessageType.fromInt(message[Constants.MESSAGE_SIZE - 1].toInt())
+        return Message(UUID(mostSigBits, leastSigBits), type)
+    }
 
     fun serializeMessage(message: Message): ByteArray {
-        val arr = ByteBuffer.allocate(message.length)
-        arr.putInt(message.length)
-        arr.putLong(message.uid.mostSignificantBits)
-        arr.putLong(message.uid.leastSignificantBits)
-        arr.put(message.payload.toByteArray(Charset.forName("UTF8")))
-        return arr.array()
+        val buffer = ByteBuffer.allocate(Constants.MESSAGE_SIZE);
+        buffer.putLong(message.uuid.mostSignificantBits)
+        buffer.putLong(message.uuid.leastSignificantBits)
+        buffer.putInt(message.type.value)
+        return buffer.array()
     }
-
-
-    fun buildMessage(payload: String, uuid: UUID, type: MessageType): Message {
-        return Message(
-            payload = payload,
-            uid = uuid,
-            type = type,
-            length = payload.length + Constants.UUID_LENGTH + Constants.MESSAGE_TYPE_LENGTH + Constants.MESSAGE_LENGTH_LENGTH
-        )
-    }
-
-
 }

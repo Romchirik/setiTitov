@@ -1,20 +1,23 @@
 import java.net.DatagramPacket
 import java.net.InetAddress
 import java.net.MulticastSocket
-import java.nio.charset.Charset
+import java.net.SocketTimeoutException
+import java.sql.Time
 import java.util.*
-import kotlin.collections.HashMap
 
 
 class CopiesDetector(
     private val group: InetAddress,
     private val uid: UUID,
 ) {
+    private var inputBuffer: ByteArray = ByteArray(Constants.MESSAGE_SIZE)
+
+    private var working: Boolean = true
     private var socket: MulticastSocket = MulticastSocket(Settings.port)
-    var copiesData: HashMap<UUID, Boolean> = HashMap()
+    private var copiesData: HashMap<UUID, Long> = HashMap()
 
     init {
-
+        socket.soTimeout = 1000
     }
 
     private fun removeCopy(uid: UUID) {
@@ -22,32 +25,75 @@ class CopiesDetector(
     }
 
     private fun addCopy(uid: UUID) {
-        copiesData[uid] = true
+        copiesData[uid] = System.currentTimeMillis()
     }
 
     private fun checkCopy(uid: UUID): Boolean {
-        return null != copiesData[uid] && false != copiesData[uid]
+        return null != copiesData[uid] && 0L != copiesData[uid]
     }
 
     fun run() {
-        var message = "ab hui"
-        var bytes: ByteArray = message.toByteArray(Charset.forName("UTF8"))
-        val hi = DatagramPacket(
-            bytes, bytes.size,
-            group, Settings.port
-        )
-        val buf = ByteArray(1000)
-        val recv = DatagramPacket(buf, buf.size)
+        System.currentTimeMillis()
         socket.joinGroup(group)
         println("Started")
-
-        while (true) {
-            socket.send(hi)
+        while (working) {
+            update()
             Thread.sleep(1000)
-            socket.receive(recv)
-            println(recv.data.toString(Charset.forName("UTF8")))
+        }
+        terminate()
+    }
 
+    private fun terminate() {
+        sendMessage(Message(uid, MessageType.LEAVE))
+        socket.leaveGroup(group)
+    }
+
+    private fun sendMessage(message: Message) {
+        val serializedMessage = MessageBuilderUtil.serializeMessage(message)
+        val packet = DatagramPacket(
+            serializedMessage, serializedMessage.size,
+            group, Settings.port
+        )
+        socket.send(packet)
+    }
+
+    private fun update() {
+        sendMessage(Message(uid, MessageType.DATA))
+
+        val datagramPacket = DatagramPacket(inputBuffer, inputBuffer.size)
+
+
+        try {
+            while (true) {
+                socket.receive(datagramPacket)
+                val incomingMessage = MessageBuilderUtil.buildMessage(datagramPacket.data)
+                handleMessage(incomingMessage)
+            }
+        } catch (e: SocketTimeoutException) {
+            checkTimeouts()
         }
 
+
+        println("Number of copies online: ${copiesData.size - 1} ")
+    }
+
+    private fun checkTimeouts() {
+        val filtered =
+            copiesData.filter { it.value - System.currentTimeMillis() < Constants.DISCONNECT_TIMEOUT || it.key == uid }
+        copiesData.clear()
+        filtered.forEach { copiesData[it.key] = it.value }
+    }
+
+    private fun handleMessage(message: Message) {
+        if (message.type == MessageType.LEAVE) {
+            copiesData.remove(message.uuid)
+            println("Leave message received")
+        } else {
+            copiesData[message.uuid] = System.currentTimeMillis()
+        }
+    }
+
+    fun stop() {
+        working = false
     }
 }
