@@ -15,11 +15,10 @@ repositories {
 dependencies {
     testImplementation(kotlin("test"))
     implementation("io.github.microutils:kotlin-logging-jvm:2.0.11")
-    testImplementation(kotlin("test"))
 }
 
 application {
-    mainClassName = "App"
+    mainClass.set("App")
 }
 
 tasks.test {

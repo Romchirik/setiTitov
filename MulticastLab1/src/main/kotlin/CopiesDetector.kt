@@ -13,27 +13,14 @@ class CopiesDetector(
     private var inputBuffer: ByteArray = ByteArray(Constants.MESSAGE_SIZE)
 
     private var working: Boolean = true
-    private var socket: MulticastSocket = MulticastSocket(Settings.port)
+    private var socket: MulticastSocket = MulticastSocket(Constants.port)
     private var copiesData: HashMap<UUID, Long> = HashMap()
 
     init {
         socket.soTimeout = 1000
     }
 
-    private fun removeCopy(uid: UUID) {
-        copiesData.remove(uid)
-    }
-
-    private fun addCopy(uid: UUID) {
-        copiesData[uid] = System.currentTimeMillis()
-    }
-
-    private fun checkCopy(uid: UUID): Boolean {
-        return null != copiesData[uid] && 0L != copiesData[uid]
-    }
-
     fun run() {
-        System.currentTimeMillis()
         socket.joinGroup(group)
         println("Started")
         while (working) {
@@ -52,17 +39,14 @@ class CopiesDetector(
         val serializedMessage = MessageBuilderUtil.serializeMessage(message)
         val packet = DatagramPacket(
             serializedMessage, serializedMessage.size,
-            group, Settings.port
+            group, Constants.port
         )
         socket.send(packet)
     }
 
     private fun update() {
         sendMessage(Message(uid, MessageType.DATA))
-
         val datagramPacket = DatagramPacket(inputBuffer, inputBuffer.size)
-
-
         try {
             while (true) {
                 socket.receive(datagramPacket)
@@ -72,15 +56,16 @@ class CopiesDetector(
         } catch (e: SocketTimeoutException) {
             checkTimeouts()
         }
-
-
         println("Number of copies online: ${copiesData.size - 1} ")
     }
 
     private fun checkTimeouts() {
         val filtered =
-            copiesData.filter { it.value - System.currentTimeMillis() < Constants.DISCONNECT_TIMEOUT || it.key == uid }
+            copiesData.filter { (key, value) ->
+                value - System.currentTimeMillis() < Constants.DISCONNECT_TIMEOUT || key == uid
+            }
         copiesData.clear()
+
         filtered.forEach { copiesData[it.key] = it.value }
     }
 

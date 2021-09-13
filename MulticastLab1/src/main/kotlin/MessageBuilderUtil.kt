@@ -1,20 +1,18 @@
 import java.nio.ByteBuffer
+import java.nio.charset.Charset
 import java.util.*
 
 object MessageBuilderUtil {
 
     fun buildMessage(message: ByteArray): Message {
-        val mostSigBits = ByteUtils.bytesToLong(message.copyOfRange(0, Constants.UUID_LENGTH / 2))
-        val leastSigBits =
-            ByteUtils.bytesToLong(message.copyOfRange(Constants.UUID_LENGTH / 2, Constants.UUID_LENGTH))
+        val uuid = UUID.fromString(message.copyOfRange(0, Constants.UUID_LENGTH).toString(Charset.forName("UTF8")))
         val type = MessageType.fromInt(message[Constants.MESSAGE_SIZE - 1].toInt())
-        return Message(UUID(mostSigBits, leastSigBits), type)
+        return Message(uuid, type)
     }
 
     fun serializeMessage(message: Message): ByteArray {
         val buffer = ByteBuffer.allocate(Constants.MESSAGE_SIZE);
-        buffer.putLong(message.uuid.mostSignificantBits)
-        buffer.putLong(message.uuid.leastSignificantBits)
+        buffer.put(message.uuid.toString().toByteArray(Charset.forName("UTF8")));
         buffer.putInt(message.type.value)
         return buffer.array()
     }
