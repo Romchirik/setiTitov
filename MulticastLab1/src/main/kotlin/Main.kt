@@ -7,6 +7,10 @@ import java.util.*
 
 fun main(args: Array<String>) {
     val myUUID: UUID = UUID.randomUUID();
+    if(args.isEmpty()){
+        println("Pass ip please");
+        return
+    }
     Constants.ip = args[0]
     try {
         val copiesDetector = CopiesDetector(InetAddress.getByName(Constants.ip), myUUID)
