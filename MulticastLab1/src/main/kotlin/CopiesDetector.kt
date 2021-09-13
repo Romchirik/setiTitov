@@ -61,8 +61,8 @@ class CopiesDetector(
 
     private fun checkTimeouts() {
         val filtered =
-            copiesData.filter { (key, value) ->
-                value - System.currentTimeMillis() < Constants.DISCONNECT_TIMEOUT || key == uid
+            copiesData.filter { (uuid, timeout) ->
+                timeout - System.currentTimeMillis() < Constants.DISCONNECT_TIMEOUT || uuid == uid
             }
         copiesData.clear()
 
