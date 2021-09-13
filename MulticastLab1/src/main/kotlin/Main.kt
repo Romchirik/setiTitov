@@ -1,3 +1,5 @@
+@file:JvmName("App")
+
 import sun.misc.Signal
 import java.net.InetAddress
 import java.util.*
