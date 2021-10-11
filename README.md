@@ -1,4 +1,1 @@
-All labs just starting with: 
-````
-./gradlew run
-````
+Just my labs, see ./labName/instruction.markdown for details
