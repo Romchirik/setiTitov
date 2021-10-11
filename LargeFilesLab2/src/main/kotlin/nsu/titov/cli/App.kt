@@ -15,7 +15,7 @@ import java.util.concurrent.Callable
 class App : Callable<Int> {
 
     @Option(names = ["-f", "--file"], paramLabel = "FILE", description = ["transmit this file to server"])
-    lateinit var targetFile: File
+    var targetFile: File? = null
 
     @Option(
         names = ["-r", "--receive"],
@@ -55,7 +55,7 @@ class App : Callable<Int> {
                     logger.warn { "No file passed" }
                     return 0
                 }
-                if (!targetFile.isFile || !targetFile.exists()) {
+                if (!targetFile!!.isFile || !targetFile!!.exists()) {
                     logger.warn { "Invalid file" }
                     return 0
                 }
@@ -71,7 +71,6 @@ class App : Callable<Int> {
                 logger.warn { "Fuck off, I'm unable to send and receive at the same time" }
                 return 0
             }
-            startClient()
         }
         return 0
     }
@@ -82,7 +81,7 @@ class App : Callable<Int> {
     }
 
     private fun startClient() {
-        val client = Client(address, port, targetFile)
+        val client = Client(address, port, targetFile!!)
         client.run()
     }
 }
