@@ -35,7 +35,7 @@ class ClientHandler(
 
     init {
         speedCounter.scheduleAtFixedRate({
-            val avgSpeed = totalBytesRead / ((System.currentTimeMillis() - startTime) / 1000.0)
+            val avgSpeed = (totalBytesRead / ((System.currentTimeMillis() - startTime) / 1000.0)).toInt()
             val instSpeed = lastBytesRead / SPEED_MEASURE_PERIOD_SEC
             lastBytesRead = 0
             logger.info { "Client $id, avgSpeed: $avgSpeed B/s, instSpeed: $instSpeed B/s" }
@@ -90,11 +90,15 @@ class ClientHandler(
         incomingFileWrapper.close()
         speedCounter.shutdown()
         client.close()
+        logger.info { "Client: $id, transmitting successful, saved to ${incomingFile.path}" }
     }
 
     private fun initTransmitting(): Boolean {
+        logger.debug { "Initializing connection" }
+
         val initMessage = readMessage()
         if (initMessage.type != MessageType.INIT) {
+            logger.debug { "Failed to initialize connection, rejecting connection" }
             shutdown()
         }
 
@@ -112,6 +116,7 @@ class ClientHandler(
         incomingFileWrapper = RandomAccessFile(incomingFile, "rw")
         incFileSize = initMessage.getFileSize()!!
 
+        logger.debug { "Connection initialized" }
         return true
     }
 
@@ -119,14 +124,17 @@ class ClientHandler(
         try {
             val size = inputStream.readNBytes(Int.SIZE_BYTES)
             val rawMessage = inputStream.readNBytes(UtilsConverters.bytesToInt(size))
-            return Message.deserialize(rawMessage)
+            val tmp = Message.deserialize(rawMessage)
+            logger.debug { "Client: $id, received message, type: ${tmp.type}" }
+            return tmp
         } catch (e: Throwable) {
-            logger.error { "Error occurred while receiving the message: $e" }
+            logger.error { "Client: $id, error occurred while receiving the message: $e" }
             return Message(type = MessageType.ERROR)
         }
     }
 
     private fun sendMessage(message: Message): Boolean {
+        logger.debug { "Client: $id, sending message, type: ${message.type}" }
         return try {
             val rawMessage = Message.serialize(message)
             outputStream.write(UtilsConverters.intToBytes(rawMessage.size))

@@ -4,9 +4,8 @@ import mu.KotlinLogging
 import nsu.titov.client.Client
 import nsu.titov.server.Server
 import nsu.titov.utils.Settings.DEFAULT_PORT
-import picocli.CommandLine
-import picocli.CommandLine.Command
-import picocli.CommandLine.Option
+import org.hibernate.validator.constraints.Range
+import picocli.CommandLine.*
 import java.io.File
 import java.net.ConnectException
 import java.util.concurrent.Callable
@@ -17,16 +16,14 @@ class App : Callable<Int> {
     @Option(names = ["-f", "--file"], paramLabel = "FILE", description = ["transmit this file to server"])
     var targetFile: File? = null
 
-    @Option(
-        names = ["-r", "--receive"],
-        description = ["receive files (start as server)"]
-    )
+    @Option(names = ["-r", "--receive"], description = ["receive files (start as server)"])
     var receive: Boolean = false
 
     @Option(names = ["-s", "--send"], description = ["send file to server (start as client, selected by default)"])
     var send: Boolean = false
 
-    @CommandLine.Option(
+    @Range(min = 1, max = 65535, message = "Valid port range: from 1 to 65535")
+    @Option(
         names = ["-p", "--port"],
         description = ["server port, if starting as server, overrides default server port"]
     )
@@ -76,11 +73,13 @@ class App : Callable<Int> {
     }
 
     private fun startServer() {
+
         val server = Server(port)
         server.run()
     }
 
     private fun startClient() {
+
         val client = Client(address, port, targetFile!!)
         client.run()
     }

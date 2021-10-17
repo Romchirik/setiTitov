@@ -4,7 +4,10 @@ import mu.KotlinLogging
 import nsu.titov.myproto.Message
 import nsu.titov.myproto.MessageType
 import nsu.titov.utils.UtilsConverters
-import java.io.*
+import java.io.File
+import java.io.InputStream
+import java.io.OutputStream
+import java.io.RandomAccessFile
 import java.net.Socket
 
 class Client(
@@ -20,6 +23,7 @@ class Client(
 
 
     override fun run() {
+        logger.info { "Started as client address: ${socket.inetAddress.hostAddress} port: ${socket.port}" }
         outputStream = socket.getOutputStream()
         inputStream = socket.getInputStream()
 
@@ -55,27 +59,35 @@ class Client(
 
 
     private fun readMessage(): Message {
-        return try {
+        try {
             val size = inputStream.readNBytes(Int.SIZE_BYTES)
             val rawMessage = inputStream.readNBytes(UtilsConverters.bytesToInt(size))
-            Message.deserialize(rawMessage)
+            val tmp = Message.deserialize(rawMessage)
+            logger.debug { "Received message, type: ${tmp.type}" }
+            return tmp
         } catch (e: Throwable) {
-            Message(type = MessageType.ERROR)
+            logger.error { "Error occurred while receiving the message: $e" }
+            return Message(type = MessageType.ERROR)
         }
     }
 
     private fun sendMessage(message: Message): Boolean {
+        logger.debug { "Sending message, type: ${message.type}" }
         return try {
             val rawMessage = Message.serialize(message)
             outputStream.write(UtilsConverters.intToBytes(rawMessage.size))
             outputStream.write(rawMessage)
             true
-        } catch (e: IOException) {
+        } catch (e: Throwable) {
+            logger.error { "Error occurred while sending the message: $e" }
             false
         }
     }
 
+
     private fun initTransmitting(): Boolean {
+        logger.debug { "Initializing connection" }
+
         val message = Message(
             type = MessageType.INIT,
             filename = file.name,
@@ -86,9 +98,16 @@ class Client(
         val response = readMessage()
 
         return when (response.type) {
-            MessageType.ACCEPT -> true
-            else -> false
+            MessageType.ACCEPT -> {
+                logger.debug { "Connection initialized" }
+                true
+            }
+            else -> {
+                logger.debug { "Failed to initialize connection, server rejected connection" }
+                false
+            }
         }
+
     }
 
 
