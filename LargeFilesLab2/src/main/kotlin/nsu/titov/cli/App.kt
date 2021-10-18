@@ -5,7 +5,8 @@ import nsu.titov.client.Client
 import nsu.titov.server.Server
 import nsu.titov.utils.Settings.DEFAULT_PORT
 import org.hibernate.validator.constraints.Range
-import picocli.CommandLine.*
+import picocli.CommandLine.Command
+import picocli.CommandLine.Option
 import java.io.File
 import java.net.ConnectException
 import java.util.concurrent.Callable
@@ -16,11 +17,11 @@ class App : Callable<Int> {
     @Option(names = ["-f", "--file"], paramLabel = "FILE", description = ["transmit this file to server"])
     var targetFile: File? = null
 
-    @Option(names = ["-r", "--receive"], description = ["receive files (start as server)"])
+    @Option(
+        names = ["-r", "--receive"],
+        description = ["receive files (start as server), if on flag passed, start as client"]
+    )
     var receive: Boolean = false
-
-    @Option(names = ["-s", "--send"], description = ["send file to server (start as client, selected by default)"])
-    var send: Boolean = false
 
     @Range(min = 1, max = 65535, message = "Valid port range: from 1 to 65535")
     @Option(
@@ -38,34 +39,26 @@ class App : Callable<Int> {
     private val logger = KotlinLogging.logger {}
 
     override fun call(): Int {
-        if (receive.xor(send)) {
-            if (receive) {
-                try {
-                    startServer()
-                } catch (e: Throwable) {
-                    logger.error { "Unable to start server: $e" }
-                    return 0
-                }
-
-            } else {
-                if (targetFile == null) {
-                    logger.warn { "No file passed" }
-                    return 0
-                }
-                if (!targetFile!!.isFile || !targetFile!!.exists()) {
-                    logger.warn { "Invalid file" }
-                    return 0
-                }
-                try {
-                    startClient()
-                } catch (e: ConnectException) {
-                    logger.warn { "Unable to establish connection: connection rejected" }
-                    return 0
-                }
+        if (receive) {
+            try {
+                startServer()
+            } catch (e: Throwable) {
+                logger.error { "Unable to start server: $e" }
+                return 0
             }
         } else {
-            if (receive.and(send)) {
-                logger.warn { "Fuck off, I'm unable to send and receive at the same time" }
+            if (targetFile == null) {
+                logger.warn { "No file passed" }
+                return 0
+            }
+            if (!targetFile!!.isFile || !targetFile!!.exists()) {
+                logger.warn { "Invalid file" }
+                return 0
+            }
+            try {
+                startClient()
+            } catch (e: ConnectException) {
+                logger.warn { "Unable to establish connection: connection rejected" }
                 return 0
             }
         }
