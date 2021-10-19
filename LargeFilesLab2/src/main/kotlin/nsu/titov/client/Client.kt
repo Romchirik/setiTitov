@@ -2,8 +2,9 @@ package nsu.titov.client
 
 import mu.KotlinLogging
 import nsu.titov.myproto.Message
+import nsu.titov.myproto.Message.Companion.readMessage
+import nsu.titov.myproto.Message.Companion.sendMessage
 import nsu.titov.myproto.MessageType
-import nsu.titov.utils.UtilsConverters
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
@@ -41,12 +42,12 @@ class Client(
                 type = MessageType.DATA,
                 payload = buffer.copyOfRange(0, totalBytesRead)
             )
-            sendMessage(message)
+            sendMessage(message, outputStream, logger)
             Thread.sleep(1000)
         }
-        sendMessage(Message(type = MessageType.FINISH))
+        sendMessage(Message(type = MessageType.FINISH), outputStream, logger)
 
-        val finishMessage = readMessage()
+        val finishMessage = readMessage(inputStream, logger)
         if (finishMessage.type == MessageType.ERROR) {
             logger.info { "Transmitting failed" }
         } else {
@@ -57,34 +58,6 @@ class Client(
         socket.close()
     }
 
-
-    private fun readMessage(): Message {
-        try {
-            val size = inputStream.readNBytes(Int.SIZE_BYTES)
-            val rawMessage = inputStream.readNBytes(UtilsConverters.bytesToInt(size))
-            val tmp = Message.deserialize(rawMessage)
-            logger.debug { "Received message, type: ${tmp.type}" }
-            return tmp
-        } catch (e: Throwable) {
-            logger.error { "Error occurred while receiving the message: $e" }
-            return Message(type = MessageType.ERROR)
-        }
-    }
-
-    private fun sendMessage(message: Message): Boolean {
-        logger.debug { "Sending message, type: ${message.type}" }
-        return try {
-            val rawMessage = Message.serialize(message)
-            outputStream.write(UtilsConverters.intToBytes(rawMessage.size))
-            outputStream.write(rawMessage)
-            true
-        } catch (e: Throwable) {
-            logger.error { "Error occurred while sending the message: $e" }
-            false
-        }
-    }
-
-
     private fun initTransmitting(): Boolean {
         logger.debug { "Initializing connection" }
 
@@ -93,9 +66,9 @@ class Client(
             filename = file.name,
             fileSize = file.length()
         )
-        sendMessage(message)
+        sendMessage(message, outputStream, logger)
 
-        val response = readMessage()
+        val response = readMessage(inputStream, logger)
 
         return when (response.type) {
             MessageType.ACCEPT -> {

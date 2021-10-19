@@ -2,14 +2,17 @@ package nsu.titov.server
 
 import mu.KotlinLogging
 import nsu.titov.myproto.Message
+import nsu.titov.myproto.Message.Companion.readMessage
+import nsu.titov.myproto.Message.Companion.sendMessage
 import nsu.titov.myproto.MessageType
 import nsu.titov.utils.Settings.SPEED_MEASURE_PERIOD_SEC
-import nsu.titov.utils.UtilsConverters
 import java.io.*
 import java.net.Socket
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
+import kotlin.random.Random
+import kotlin.random.nextUInt
 
 
 class ClientHandler(
@@ -53,7 +56,7 @@ class ClientHandler(
         logger.info { "New client accepted, id: $id" }
 
         while (!stopReceiving) {
-            val incMessage = readMessage()
+            val incMessage = readMessage(inputStream, logger)
             when (incMessage.type) {
                 MessageType.ERROR -> {
                     shutdown()
@@ -72,11 +75,9 @@ class ClientHandler(
                     return
                 }
             }
-
-
         }
         if (totalBytesRead != incFileSize) {
-            sendMessage(Message(type = MessageType.ERROR))
+            sendMessage(Message(type = MessageType.ERROR), outputStream, logger)
             incomingFileWrapper.close()
             if (incomingFile.exists()) {
                 incomingFile.delete()
@@ -84,7 +85,7 @@ class ClientHandler(
             client.close()
             return
         } else {
-            sendMessage(Message(type = MessageType.SUCCESS))
+            sendMessage(Message(type = MessageType.SUCCESS), outputStream, logger)
         }
 
         incomingFileWrapper.close()
@@ -96,14 +97,14 @@ class ClientHandler(
     private fun initTransmitting(): Boolean {
         logger.debug { "Initializing connection" }
 
-        val initMessage = readMessage()
+        val initMessage = readMessage(inputStream, logger)
         if (initMessage.type != MessageType.INIT) {
             logger.debug { "Failed to initialize connection, rejecting connection" }
             shutdown()
         }
 
         val response = Message(type = MessageType.ACCEPT)
-        sendMessage(response)
+        sendMessage(response, outputStream, logger)
 
         incomingFile = File(
             StringBuilder()
@@ -112,6 +113,12 @@ class ClientHandler(
                 .append("/")
                 .append(File(initMessage.getFileName()!!).name).toString()
         )
+        val defaultName = incomingFile.name
+        if (incomingFile.exists()) {
+            do {
+                incomingFile = File(getNewName(defaultName))
+            } while (incomingFile.exists())
+        }
         incomingFile.createNewFile()
         incomingFileWrapper = RandomAccessFile(incomingFile, "rw")
         incFileSize = initMessage.getFileSize()!!
@@ -120,32 +127,15 @@ class ClientHandler(
         return true
     }
 
-    private fun readMessage(): Message {
-        try {
-            val size = inputStream.readNBytes(Int.SIZE_BYTES)
-            val rawMessage = inputStream.readNBytes(UtilsConverters.bytesToInt(size))
-            val tmp = Message.deserialize(rawMessage)
-            logger.debug { "Client: $id, received message, type: ${tmp.type}" }
-            return tmp
-        } catch (e: Throwable) {
-            logger.error { "Client: $id, error occurred while receiving the message: $e" }
-            return Message(type = MessageType.ERROR)
-        }
-    }
 
-    private fun sendMessage(message: Message): Boolean {
-        logger.debug { "Client: $id, sending message, type: ${message.type}" }
-        return try {
-            val rawMessage = Message.serialize(message)
-            outputStream.write(UtilsConverters.intToBytes(rawMessage.size))
-            outputStream.write(rawMessage)
-            true
-        } catch (e: Throwable) {
-            logger.error { "Error occurred while sending the message: $e" }
-            false
-        }
+    private fun getNewName(defaultName: String): String {
+        return StringBuilder()
+            .append("./")
+            .append(saveDir)
+            .append("/")
+            .append(Random.nextUInt())
+            .append(defaultName).toString()
     }
-
 
     /**
      * emergency method, terminates handler immediately
@@ -154,7 +144,7 @@ class ClientHandler(
         logger.warn { "Shutting down the client" }
 
         try {
-            sendMessage(Message(type = MessageType.ERROR))
+            sendMessage(Message(type = MessageType.ERROR), outputStream, logger)
         } catch (e: IOException) {
             logger.warn { "Unable to close connection properly" }
         }

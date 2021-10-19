@@ -1,5 +1,9 @@
 package nsu.titov.myproto
 
+import mu.KLogger
+import nsu.titov.utils.UtilsConverters
+import java.io.InputStream
+import java.io.OutputStream
 import java.nio.ByteBuffer
 
 
@@ -26,7 +30,33 @@ data class Message(
         const val MAX_PAYLOAD_SIZE = 32000
         const val MAX_NAME_SIZE = 4096
 
-        fun serialize(message: Message): ByteArray {
+        fun readMessage(inputStream: InputStream, logger: KLogger): Message {
+            try {
+                val size = inputStream.readNBytes(Int.SIZE_BYTES)
+                val rawMessage = inputStream.readNBytes(UtilsConverters.bytesToInt(size))
+                val tmp = deserialize(rawMessage)
+                logger.debug { "Received message, type: ${tmp.type}" }
+                return tmp
+            } catch (e: Throwable) {
+                logger.error { "Error occurred while receiving the message: $e" }
+                return Message(type = MessageType.ERROR)
+            }
+        }
+
+        fun sendMessage(message: Message, outputStream: OutputStream, logger: KLogger): Boolean {
+            logger.debug { "Sending message, type: ${message.type}" }
+            return try {
+                val rawMessage = serialize(message)
+                outputStream.write(UtilsConverters.intToBytes(rawMessage.size))
+                outputStream.write(rawMessage)
+                true
+            } catch (e: Throwable) {
+                logger.error { "Error occurred while sending the message: $e" }
+                false
+            }
+        }
+
+        private fun serialize(message: Message): ByteArray {
             when (message.type) {
                 MessageType.INIT -> {
                     val buffer = ByteBuffer.allocate(Byte.SIZE_BYTES + ULong.SIZE_BYTES + message.filename!!.length)

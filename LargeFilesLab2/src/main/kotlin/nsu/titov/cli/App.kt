@@ -41,7 +41,7 @@ class App : Callable<Int> {
     override fun call(): Int {
         if (receive) {
             try {
-                startServer()
+                Server(port).run()
             } catch (e: Throwable) {
                 logger.error { "Unable to start server: $e" }
                 return 0
@@ -56,24 +56,12 @@ class App : Callable<Int> {
                 return 0
             }
             try {
-                startClient()
+                Client(address, port, targetFile!!).run()
             } catch (e: ConnectException) {
                 logger.warn { "Unable to establish connection: connection rejected" }
                 return 0
             }
         }
         return 0
-    }
-
-    private fun startServer() {
-
-        val server = Server(port)
-        server.run()
-    }
-
-    private fun startClient() {
-
-        val client = Client(address, port, targetFile!!)
-        client.run()
     }
 }
