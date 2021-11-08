@@ -1,0 +1,29 @@
+{
+    "xid": "N1455669814",
+    "name": "HUI",
+    "address": {
+        "city": "Хужирское сельское поселение",
+        "state": "Иркутская область",
+        "county": "Ольхонский район",
+        "country": "Россия",
+        "locality": "мыс Хора-Ундур",
+        "country_code": "ru"
+    },
+    "rate": "0",
+    "osm": "node/1455669814",
+    "kinds": "view_points,other,interesting_places",
+    "sources": {
+        "geometry": "osm",
+        "attributes": [
+            "osm"
+        ]
+    },
+    "otm": "https://opentripmap.com/en/card/N1455669814",
+    "point": {
+        "lon": 107.767563,
+        "lat": 53.395855
+    },
+    "info": {
+        "descr": "Hui"
+    }
+}

@@ -1,0 +1,46 @@
+{
+    "coord": {
+        "lon": 82.9344,
+        "lat": 55.0411
+    },
+    "weather": [
+        {
+            "id": 601,
+            "main": "Snow",
+            "description": "snow",
+            "icon": "13d"
+        }
+    ],
+    "base": "stations",
+    "main": {
+        "temp": -5.39,
+        "feels_like": -12.29,
+        "temp_min": -5.39,
+        "temp_max": -5.15,
+        "pressure": 1032,
+        "humidity": 86
+    },
+    "visibility": 2000,
+    "wind": {
+        "speed": 6,
+        "deg": 220
+    },
+    "snow": {
+        "1h": 0.84
+    },
+    "clouds": {
+        "all": 90
+    },
+    "dt": 1636175614,
+    "sys": {
+        "type": 1,
+        "id": 8958,
+        "country": "RU",
+        "sunrise": 1636162918,
+        "sunset": 1636195308
+    },
+    "timezone": 25200,
+    "id": 1496747,
+    "name": "Novosibirsk",
+    "cod": 200
+}
