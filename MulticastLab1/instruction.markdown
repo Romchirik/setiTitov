@@ -1,4 +1,4 @@
-Second lab, simple file transmitter
+First lab, copies detector, using multicast servers
 
 Starting with:
 ```
