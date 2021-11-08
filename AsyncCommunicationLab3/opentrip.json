@@ -1,0 +1,120 @@
+[
+    {
+        "xid": "R555716",
+        "name": "Baikal lake",
+        "dist": 7784.4619428,
+        "rate": 7,
+        "osm": "relation/555716",
+        "wikidata": "Q5513",
+        "kinds": "interesting_places,natural,water,other_lakes",
+        "point": {
+            "lon": 108.202492,
+            "lat": 53.67218
+        }
+    },
+    {
+        "xid": "U1918",
+        "name": "Поющие пески Марково",
+        "dist": 28744.36888152,
+        "rate": 5,
+        "kinds": "rock_formations,natural,interesting_places,geological_formations,nature_reserves,national_parks",
+        "point": {
+            "lon": 108.532997,
+            "lat": 53.52
+        }
+    },
+    {
+        "xid": "U1917",
+        "name": "Мыс Хобой",
+        "dist": 32347.42755313,
+        "rate": 5,
+        "kinds": "rock_formations,natural,interesting_places,geological_formations,nature_reserves,national_parks",
+        "point": {
+            "lon": 107.788002,
+            "lat": 53.41
+        }
+    },
+    {
+        "xid": "N2062137455",
+        "name": "",
+        "dist": 33260.52140561,
+        "rate": 0,
+        "osm": "node/2062137455",
+        "kinds": "view_points,other,interesting_places",
+        "point": {
+            "lon": 107.787254,
+            "lat": 53.399055
+        }
+    },
+    {
+        "xid": "N1455682229",
+        "name": "cape Left Shuntae",
+        "dist": 33675.64478518,
+        "rate": 1,
+        "osm": "node/1455682229",
+        "kinds": "other,unclassified_objects,interesting_places,tourist_object",
+        "point": {
+            "lon": 107.791336,
+            "lat": 53.391766
+        }
+    },
+    {
+        "xid": "N1455669815",
+        "name": "",
+        "dist": 34422.90171527,
+        "rate": 0,
+        "osm": "node/1455669815",
+        "kinds": "mountain_peaks,interesting_places,natural,geological_formations",
+        "point": {
+            "lon": 107.767563,
+            "lat": 53.395863
+        }
+    },
+    {
+        "xid": "N1455669814",
+        "name": "",
+        "dist": 34423.14740787,
+        "rate": 0,
+        "osm": "node/1455669814",
+        "kinds": "view_points,other,interesting_places",
+        "point": {
+            "lon": 107.767563,
+            "lat": 53.395855
+        }
+    },
+    {
+        "xid": "N2062128798",
+        "name": "",
+        "dist": 36444.80856998,
+        "rate": 0,
+        "osm": "node/2062128798",
+        "kinds": "view_points,other,interesting_places",
+        "point": {
+            "lon": 107.729233,
+            "lat": 53.393272
+        }
+    },
+    {
+        "xid": "U1916",
+        "name": "Мыс Саган-Хушун",
+        "dist": 36505.02299026,
+        "rate": 5,
+        "kinds": "rock_formations,natural,interesting_places,geological_formations,nature_reserves,national_parks",
+        "point": {
+            "lon": 107.730003,
+            "lat": 53.391998
+        }
+    },
+    {
+        "xid": "N1455681561",
+        "name": "cape Sagan-Hushun (Three Brothers)",
+        "dist": 36605.16845409,
+        "rate": 1,
+        "osm": "node/1455681561",
+        "kinds": "other,unclassified_objects,interesting_places,tourist_object",
+        "point": {
+            "lon": 107.726486,
+            "lat": 53.392921
+        }
+    }
+]
