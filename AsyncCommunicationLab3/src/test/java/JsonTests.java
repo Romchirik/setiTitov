@@ -1,15 +1,16 @@
 import com.fasterxml.jackson.databind.ObjectMapper;
+import nsu.titov.apis.PropsProvider;
 import nsu.titov.models.GraphHopperResponse;
 import nsu.titov.models.OpenTripInfoResponse;
 import nsu.titov.models.OpenTripResponse;
 import nsu.titov.models.OpenWeatherResponse;
-import org.apache.logging.log4j.core.util.Assert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 
 public class JsonTests {
 
@@ -26,50 +27,55 @@ public class JsonTests {
 
     @Test
     public void testGraphhopperJson() throws IOException {
-        var objectMapper = new ObjectMapper();
-        var file = new File("graphhopper.json");
-        var response = objectMapper.readValue(file, GraphHopperResponse.class);
-        var item = response.items.get(0);
+        try (InputStream input = PropsProvider.class.getResourceAsStream("/graphhopper.json")) {
+            var objectMapper = new ObjectMapper();
+            var response = objectMapper.readValue(input, GraphHopperResponse.class);
+            var item = response.items.get(0);
 
-        Assertions.assertEquals(item.point.lat, 53.61674335);
-        Assertions.assertEquals(item.point.lon, 108.13072518745162);
-        Assertions.assertEquals(item.name, "Lake Baikal");
-        Assertions.assertEquals(item.country, "Russia");
-        Assertions.assertEquals(item.countryCode, "RU");
+            Assertions.assertEquals(item.point.lat, 53.61674335);
+            Assertions.assertEquals(item.point.lon, 108.13072518745162);
+            Assertions.assertEquals(item.name, "Lake Baikal");
+            Assertions.assertEquals(item.country, "Russia");
+            Assertions.assertEquals(item.countryCode, "RU");
+        }
     }
 
     @Test
     public void testWeatherJson() throws IOException {
-        var objectMapper = new ObjectMapper();
-        var file = new File("weather.json");
-        var response = objectMapper.readValue(file, OpenWeatherResponse.class);
+        try (InputStream input = PropsProvider.class.getResourceAsStream("/weather.json")) {
+            var objectMapper = new ObjectMapper();
+            var response = objectMapper.readValue(input, OpenWeatherResponse.class);
 
-        Assertions.assertEquals(response.main.feelsLike, -12.29);
-        Assertions.assertEquals(response.main.temp, -5.39);
-        Assertions.assertEquals(response.wind.speed, 6);
+            Assertions.assertEquals(response.main.feelsLike, -12.29);
+            Assertions.assertEquals(response.main.temp, -5.39);
+            Assertions.assertEquals(response.wind.speed, 6);
+        }
     }
 
     @Test
     public void testPlacesJson() throws IOException {
-        var objectMapper = new ObjectMapper();
-        var file = new File("opentrip.json");
-        var response = objectMapper.readValue(file, OpenTripResponse.class);
+        try (InputStream input = PropsProvider.class.getResourceAsStream("/opentrip.json")) {
+            var objectMapper = new ObjectMapper();
+            var response = objectMapper.readValue(input, OpenTripResponse.class);
 
-
-        var item = response.get(0);
-        Assertions.assertEquals(item.xid, "R555716");
-        Assertions.assertEquals(item.name, "Baikal lake");
-        Assertions.assertEquals(item.wikidata, "Q5513");
+            var item = response.get(0);
+            Assertions.assertEquals(item.xid, "R555716");
+            Assertions.assertEquals(item.name, "Baikal lake");
+            Assertions.assertEquals(item.wikidata, "Q5513");
+        }
     }
 
     @Test
     public void testInfoJson() throws IOException {
-        var objectMapper = new ObjectMapper();
-        var file = new File("info.json");
-        var response = objectMapper.readValue(file, OpenTripInfoResponse.class);
+        try (InputStream input = PropsProvider.class.getResourceAsStream("/info.json")) {
+            var objectMapper = new ObjectMapper();
+            var response = objectMapper.readValue(input, OpenTripInfoResponse.class);
 
-        Assertions.assertEquals(response.info.description, "Hui");
-        Assertions.assertEquals(response.name, "HUI");
+            Assertions.assertEquals(response.info.description, "name");
+            Assertions.assertEquals(response.name, "NAME");
+        }
+
+
     }
 
 }

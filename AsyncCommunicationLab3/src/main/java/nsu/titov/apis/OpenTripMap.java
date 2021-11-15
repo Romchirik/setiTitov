@@ -14,32 +14,31 @@ import java.util.function.Consumer;
 
 public class OpenTripMap {
     private static final Logger logger = LogManager.getLogger(OpenTripMap.class);
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     private static String urlInfo(String xid) {
         return String.format("%s/en/places/xid/%s?apikey=%s",
-                PropsProvider.getOpenTripBaseUrl(),
+                PropsProvider.openTripBaseUrl,
                 xid,
-                PropsProvider.getOpenTripApiKey()
+                PropsProvider.openTripApiKey
         );
     }
 
     private static String urlPoint(Point point, int radius, int limit) {
         return String.format("%s/en/places/radius?radius=%d&lon=%f&lat=%f&format=json&limit=%d&apikey=%s",
-                PropsProvider.getOpenTripBaseUrl(),
+                PropsProvider.openTripBaseUrl,
                 radius,
                 point.lon,
                 point.lat,
                 limit,
-                PropsProvider.getOpenTripApiKey());
+                PropsProvider.openTripApiKey);
     }
 
-    private static OpenTripResponse parse2(Response rawResponse) throws JsonProcessingException {
-        var objectMapper = new ObjectMapper();
+    private static OpenTripResponse parseItemsArr(Response rawResponse) throws JsonProcessingException {
         return objectMapper.readValue(rawResponse.getResponseBody(), OpenTripResponse.class);
     }
 
-    private static OpenTripInfoResponse parse1(Response rawResponse) throws JsonProcessingException {
-        var objectMapper = new ObjectMapper();
+    private static OpenTripInfoResponse parseItem(Response rawResponse) throws JsonProcessingException {
         return objectMapper.readValue(rawResponse.getResponseBody(), OpenTripInfoResponse.class);
     }
 
@@ -50,7 +49,7 @@ public class OpenTripMap {
                 urlPoint(point, radius, limit),
                 response -> {
                     try {
-                        onSuccess.accept(parse2(response));
+                        onSuccess.accept(parseItemsArr(response));
                     } catch (JsonProcessingException e) {
                         logger.error("Unable to parse response body");
                         onError.accept(response);
@@ -71,7 +70,7 @@ public class OpenTripMap {
                 urlInfo(xid),
                 response -> {
                     try {
-                        onSuccess.accept(parse1(response));
+                        onSuccess.accept(parseItem(response));
                     } catch (JsonProcessingException e) {
                         logger.error("Unable to parse response body");
                         onError.accept(response);

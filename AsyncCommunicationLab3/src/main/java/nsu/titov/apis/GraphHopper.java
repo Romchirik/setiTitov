@@ -2,6 +2,7 @@ package nsu.titov.apis;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import nsu.titov.engine.HttpServer;
 import nsu.titov.models.GraphHopperResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -15,12 +16,13 @@ import static org.asynchttpclient.Dsl.get;
 
 public class GraphHopper {
     private static final Logger logger = LogManager.getLogger(GraphHopper.class);
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     private static String url(String place) {
         return String.format("%s/geocode?q=%s&locale=en&limit=20&key=%s",
-                PropsProvider.getGraphHopperBaseUrl(),
+                PropsProvider.graphHopperBaseUrl,
                 place,
-                PropsProvider.getGraphHopperApiKey());
+                PropsProvider.graphHopperApiKey);
     }
 
     private static GraphHopperResponse parse(Response rawResponse) throws JsonProcessingException {
@@ -32,25 +34,20 @@ public class GraphHopper {
                                        Consumer<GraphHopperResponse> onSuccess,
                                        Consumer<Response> onError) {
         logger.debug(String.format("Requesting locations from graphhopper, target: %s", place));
-        Request request = get(url(place)).build();
-        asyncHttpClient()
-                .executeRequest(request)
-                .toCompletableFuture()
-                .thenApply((response -> {
-                    logger.debug(String.format("Requested locations form graphhopper, status code: %d", response.getStatusCode()));
-                    if (200 == response.getStatusCode()) {
-                        try {
-                            var tmp = parse(response);
-                            onSuccess.accept(tmp);
-                        } catch (JsonProcessingException e) {
-                            onError.accept(response);
-                        }
-                    } else {
+        HttpServer.sendGetRequest(
+                url(place),
+                response -> {
+                    try {
+                        onSuccess.accept(parse(response));
+                    } catch (JsonProcessingException e) {
                         onError.accept(response);
                     }
-                    return response;
-                }));
-
+                },
+                response -> {
+                    logger.error(String.format("Error occurred while requesting places, code: %d", response.getStatusCode()));
+                    onError.accept(response);
+                }
+        );
     }
 
 

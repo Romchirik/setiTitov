@@ -1,11 +1,13 @@
 package nsu.titov.engine;
 
+import lombok.SneakyThrows;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.asynchttpclient.AsyncHttpClient;
 import org.asynchttpclient.Request;
 import org.asynchttpclient.Response;
 
+import java.io.IOException;
 import java.util.function.Consumer;
 
 import static org.asynchttpclient.Dsl.asyncHttpClient;
@@ -45,6 +47,15 @@ public class HttpServer {
                     }
                     return response;
                 }));
+    }
+
+    public static void close() {
+        try {
+            getInstance().logger.info("Closing internal http server");
+            getInstance().httpClient.close();
+        } catch (IOException e) {
+            getInstance().logger.error("Unable to properly close internal http server");
+        }
     }
 }
 

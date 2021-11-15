@@ -13,13 +13,14 @@ import java.util.function.Consumer;
 
 public class OpenWeatherMap {
     private static final Logger logger = LogManager.getLogger(OpenWeatherMap.class);
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     public static String url(Point point) {
         return String.format("%s/weather?lat=%f&lon=%f&units=metric&appid=%s",
-                PropsProvider.getOpenWeatherBaseUrl(),
+                PropsProvider.openWeatherBaseUrl,
                 point.lat,
                 point.lon,
-                PropsProvider.getOpenWeatherApiKey());
+                PropsProvider.openWeatherApiKey);
     }
 
     public static void getWeatherByPoint(Point point,
@@ -43,7 +44,6 @@ public class OpenWeatherMap {
     }
 
     private static OpenWeatherResponse parse(Response rawResponse) throws JsonProcessingException {
-        var objectMapper = new ObjectMapper();
         return objectMapper.readValue(rawResponse.getResponseBody(), OpenWeatherResponse.class);
     }
 
