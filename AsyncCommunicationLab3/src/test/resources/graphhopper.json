@@ -1,0 +1,190 @@
+{
+    "hits": [
+        {
+            "point": {
+                "lat": 53.61674335,
+                "lng": 108.13072518745162
+            },
+            "extent": [
+                103.6994241,
+                51.4563769,
+                109.9637488,
+                55.7771085
+            ],
+            "name": "Lake Baikal",
+            "country": "Russia",
+            "countrycode": "RU",
+            "osm_id": 555716,
+            "osm_type": "R",
+            "osm_key": "natural",
+            "osm_value": "water"
+        },
+        {
+            "point": {
+                "lat": -22.7839492,
+                "lng": 136.1603803
+            },
+            "name": "Baikal",
+            "country": "Australia",
+            "countrycode": "AU",
+            "city": "Orrtipa-Thurra",
+            "state": "Northern Territory",
+            "osm_id": 3797541799,
+            "osm_type": "N",
+            "osm_key": "place",
+            "osm_value": "isolated_dwelling"
+        },
+        {
+            "point": {
+                "lat": 43.7086971,
+                "lng": 24.4227581
+            },
+            "name": "Baikal",
+            "country": "Bulgaria",
+            "countrycode": "BG",
+            "osm_id": 273875657,
+            "osm_type": "N",
+            "osm_key": "place",
+            "osm_value": "village"
+        },
+        {
+            "point": {
+                "lat": 55.062887,
+                "lng": 108.681221
+            },
+            "name": "Baikal Mountains",
+            "country": "Russia",
+            "countrycode": "RU",
+            "osm_id": 8165327395,
+            "osm_type": "N",
+            "osm_key": "natural",
+            "osm_value": "mountain_range"
+        },
+        {
+            "point": {
+                "lat": 51.870476,
+                "lng": 104.808372
+            },
+            "extent": [
+                104.7746909,
+                51.8693383,
+                104.8140228,
+                51.8821471
+            ],
+            "name": "Baikal",
+            "country": "Russia",
+            "countrycode": "RU",
+            "state": "Irkutsk Oblast",
+            "osm_id": 146132201,
+            "osm_type": "W",
+            "osm_key": "place",
+            "osm_value": "village"
+        },
+        {
+            "point": {
+                "lat": 51.80990495,
+                "lng": 107.44900751452916
+            },
+            "extent": [
+                107.4015149,
+                51.7996387,
+                107.4788484,
+                51.8199169
+            ],
+            "name": "Baikal Airport",
+            "country": "Russia",
+            "countrycode": "RU",
+            "city": "Ulan-Ude",
+            "state": "Buryatia",
+            "street": "улица Посёлок Аэропорт",
+            "postcode": "670018",
+            "osm_id": 3903662,
+            "osm_type": "R",
+            "osm_key": "aeroway",
+            "osm_value": "aerodrome"
+        },
+        {
+            "point": {
+                "lat": -34.8715545,
+                "lng": -55.0703547
+            },
+            "extent": [
+                -55.0713644,
+                -34.8732238,
+                -55.0699957,
+                -34.8705798
+            ],
+            "name": "Baikal",
+            "country": "Uruguay",
+            "countrycode": "UY",
+            "city": "Punta Ballena",
+            "state": "Maldonado",
+            "postcode": "20003",
+            "osm_id": 181223958,
+            "osm_type": "W",
+            "osm_key": "highway",
+            "osm_value": "residential"
+        },
+        {
+            "point": {
+                "lat": 51.36988475,
+                "lng": 105.21678051318236
+            },
+            "extent": [
+                104.8644691,
+                51.1183741,
+                105.5495697,
+                51.6213008
+            ],
+            "name": "Baikal Nature Reserve",
+            "country": "Russia",
+            "countrycode": "RU",
+            "osm_id": 555786,
+            "osm_type": "R",
+            "osm_key": "boundary",
+            "osm_value": "protected_area"
+        },
+        {
+            "point": {
+                "lat": 50.69671065,
+                "lng": 12.460836008522492
+            },
+            "extent": [
+                12.4596042,
+                50.6958799,
+                12.4620746,
+                50.697465
+            ],
+            "name": "Baikal-Einkaufszentrum",
+            "country": "Germany",
+            "countrycode": "DE",
+            "city": "Zwickau",
+            "state": "Saxony",
+            "postcode": "08134",
+            "osm_id": 35552976,
+            "osm_type": "W",
+            "osm_key": "landuse",
+            "osm_value": "retail"
+        },
+        {
+            "point": {
+                "lat": 52.7754257,
+                "lng": 106.44641341610935
+            },
+            "extent": [
+                103.7332602,
+                51.7261808,
+                107.9683081,
+                53.8255337
+            ],
+            "name": "Baikal National Park",
+            "country": "Russia",
+            "countrycode": "RU",
+            "osm_id": 2793407,
+            "osm_type": "R",
+            "osm_key": "boundary",
+            "osm_value": "protected_area"
+        }
+    ],
+    "locale": "en"
+}
