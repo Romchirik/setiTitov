@@ -99,8 +99,8 @@ public class MainWindowController implements Initializable {
     }
 
     private void setWeather(OpenWeatherResponse response) {
-        setLabelText(temperatureLabel, String.format("%.1f °C", response.main.temp));
-        setLabelText(feelsLikeLabel, String.format("%.1f °C", response.main.feelsLike));
+        setLabelText(temperatureLabel, String.format("%.1f", response.main.temp));
+        setLabelText(feelsLikeLabel, String.format("%.1f", response.main.feelsLike));
         setLabelText(windSpeedLabel, String.format("%.1f m/s", response.wind.speed));
     }
 
