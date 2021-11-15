@@ -75,7 +75,7 @@ public class MainWindowController implements Initializable {
     }
 
     public void handleLocationSelected(GraphHopperItem item) {
-        if(item == null){
+        if (item == null) {
             return;
         }
         setLabelText(selectedItemLabel, item.name);

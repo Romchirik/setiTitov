@@ -6,13 +6,9 @@ import nsu.titov.engine.HttpServer;
 import nsu.titov.models.GraphHopperResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.asynchttpclient.Request;
 import org.asynchttpclient.Response;
 
 import java.util.function.Consumer;
-
-import static org.asynchttpclient.Dsl.asyncHttpClient;
-import static org.asynchttpclient.Dsl.get;
 
 public class GraphHopper {
     private static final Logger logger = LogManager.getLogger(GraphHopper.class);
