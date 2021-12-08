@@ -2,6 +2,7 @@ plugins {
     id 'org.jetbrains.kotlin.jvm' version '1.5.30'
     id 'application'
     id 'org.openjfx.javafxplugin' version '0.0.8'
+    id 'com.google.protobuf' version '0.8.17'
 }
 
 group = 'me.romchirik'
@@ -16,7 +17,13 @@ application {
 }
 
 dependencies {
-    testImplementation 'org.jetbrains.kotlin:kotlin-test:1.5.31'
+    testImplementation 'org.jetbrains.kotlin:kotlin-test:1.6.0'
+
+    implementation 'io.github.microutils:kotlin-logging:2.0.11'
+    implementation 'org.slf4j:slf4j-simple:1.7.32'
+
+    implementation 'com.google.protobuf:protobuf-kotlin:3.19.1'
+    implementation 'com.google.protobuf:protobuf-java:3.19.1'
     implementation 'org.openjfx:javafx:17.0.0.1'
 }
 
@@ -24,12 +31,20 @@ test {
     useJUnit()
 }
 
+protobuf {
+    generatedFilesBaseDir = 'src/'
+    protoc {
+        // The artifact spec for the Protobuf Compiler
+        artifact = 'com.google.protobuf:protoc:3.0.0'
+    }
+}
+
 compileKotlin {
-    kotlinOptions.jvmTarget = '1.8'
+    kotlinOptions.jvmTarget = '16'
 }
 
 compileTestKotlin {
-    kotlinOptions.jvmTarget = '1.8'
+    kotlinOptions.jvmTarget = '16'
 }
 
 javafx {
@@ -37,4 +52,4 @@ javafx {
     modules = ['javafx.controls', 'javafx.fxml']
 }
 
-mainClassName = 'ru.nsu.Main'
+
