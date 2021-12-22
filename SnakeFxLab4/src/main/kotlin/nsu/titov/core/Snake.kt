@@ -1,14 +1,26 @@
 package nsu.titov.core
 
+import nsu.titov.core.data.Playfield
+import nsu.titov.core.data.Point
 import nsu.titov.proto.SnakeProto
-import nsu.titov.utils.*
+import nsu.titov.utils.dirToPoint
+import nsu.titov.utils.invertDir
+import nsu.titov.utils.pointToDir
+import nsu.titov.utils.sign
 import java.util.*
 import kotlin.math.abs
 
 
-class Snake {
-    var body: LinkedList<SnakeNode> = LinkedList()
-    private var direction = SnakeProto.Direction.UP
+class Snake : Collidable {
+    private var snakeState: SnakeProto.GameState.Snake.SnakeState = SnakeProto.GameState.Snake.SnakeState.ALIVE
+    private lateinit var playfield: Playfield
+    var direction: SnakeProto.Direction = SnakeProto.Direction.UP
+        set(value) {
+            if (value != invertDir(direction)) {
+                field = value
+            }
+        }
+    private var body: LinkedList<Point> = LinkedList()
 
     /** Creates a snake from 2 points (points validation included), first point is interpreted as snake head,
      * second point is offset of snake tail
@@ -17,117 +29,133 @@ class Snake {
      *
      * @param head Snake head
      * @param offset Snake tail offset
+     * @throws AssertionError if finds invalid offset
      */
-    constructor (head: Point, offset: Point) {
+    constructor (head: Point, offset: Point, playfield: Playfield) {
+        this.playfield = playfield
         body.addAll(createSnakeSpan(head, offset))
-        body.add(SnakeNode(false, head + offset))
-        body[0].isHead = true
-        direction = pointToDir(offset)
+        direction = pointToDir(-offset)
+        body.forEach { point -> playfield.normalizeDirty(point) }
+
     }
 
-    /** Creates snake from incoming protobuf message
-     *
-     * @see SnakeProto.GameState.Snake
-     * @param message Snake tail offset
+    /** Creates snake from starting points and offsets (offsets validation included), combined in list
+     * @param points offsets list
+     * @throws AssertionError if finds invalid offset
      */
-    constructor (message: SnakeProto.GameState.Snake) {
-        var prevPoint = coordToPoint(message.pointsList[0])
-        for (i in 1 until message.pointsCount) {
-            body.addAll(createSnakeSpan(prevPoint, coordToPoint(message.pointsList[i])))
-            prevPoint += coordToPoint(message.pointsList[i])
+    constructor (points: List<Point>, playfield: Playfield) {
+        assert(points.size >= 2) { "Points list for snake must be longer than 2" }
+        this.playfield = playfield
+        var prevPoint = points.first()
+        for (i in 1 until points.size) {
+            body.addAll(createSnakeSpan(prevPoint, points[i]))
+            prevPoint += points[i]
         }
-        body.add(SnakeNode(false, prevPoint))
-        body[0].isHead = true
-        direction = message.headDirection
+        body.add(prevPoint)
+        direction = pointToDir(-points[1])
+
+        body.forEach { point -> playfield.normalizeDirty(point) }
     }
 
-    fun setDir(direction: SnakeProto.Direction) {
-        this.direction = direction
+    override fun ifCollide(point: Point): Boolean {
+        for (i in body) {
+            if (i == point) {
+                return true
+            }
+        }
+        return false
     }
 
+
+    /**
+     * Moves snake forward, but needed field size represented as point to keep snake in field bounds
+     * @param playfield current playfield info
+     */
+    fun tick() {
+        body.removeLast()
+        body.addFirst(playfield.normalize(body.first + dirToPoint(direction)))
+    }
 
     fun grow() {
-        val offset = body[body.size - 1].coordinates - body[body.size - 2].coordinates
-        body.add(SnakeNode(false, body[body.size - 1].coordinates + offset))
+        val iter = body.descendingIterator()
+        val tail1 = iter.next()
+        val tail0 = iter.next()
+        body.addLast(playfield.normalize(tail1 + (tail1 - tail0)))
     }
 
-    fun tick() {
-        val tail = body.removeLast()
-        tail.isHead = true
-        tail.coordinates = body.first.coordinates + dirToPoint(direction)
-        body.first.isHead = false
-        body.addFirst(tail)
-    }
+    /** Creates list of snake head point and offsets as in .proto representation
+     * @param playfield current playfield
+     */
+    fun serialize(): List<Point> {
+        val tmp: MutableList<Point> = mutableListOf(body.first);
+        val offsetMap: MutableList<Point> = ArrayList();
 
-    fun toProto(fieldConfig: FieldConfig): SnakeProto.GameState.Snake.Builder {
-        val nodePoints = ArrayList<Point>()
-        val iter = body.iterator()
-
-        var prevNode = iter.next()
-        nodePoints.add(prevNode.coordinates)
-        val tmp = iter.next()
-        var prevDir = pointToDir(
-            Point(
-                x = (tmp.coordinates - prevNode.coordinates).x % fieldConfig.width,
-                y = (tmp.coordinates - prevNode.coordinates).y % fieldConfig.height
-            )
-        )
-        prevNode = tmp
-        lateinit var currNode: SnakeNode
-        while (iter.hasNext()) {
-            currNode = iter.next()
-            val currDir = pointToDir(
-                Point(
-                    x = (currNode.coordinates - prevNode.coordinates).x % fieldConfig.width,
-                    y = (currNode.coordinates - prevNode.coordinates).y % fieldConfig.height
-                )
-            )
-            if (currDir != prevDir) {
-                nodePoints.add(prevNode.coordinates)
-            }
-            prevDir = currDir
-            prevNode = currNode
-        }
-        nodePoints.add(prevNode.coordinates)
-        val message = SnakeProto.GameState.Snake.newBuilder().setHeadDirection(direction)
-
-        val listIter = nodePoints.listIterator()
-        var prevPoint = listIter.next()
-        message.addPoints(pointToCoord(nodePoints[0]))
-        while (listIter.hasNext()) {
-            val currPoint = listIter.next()
-            message.addPoints(pointToCoord(currPoint - prevPoint))
+        val iter0 = body.iterator()
+        var prevPoint = iter0.next()
+        while (iter0.hasNext()) {
+            val currPoint = iter0.next()
+            offsetMap.add(currPoint - prevPoint)
             prevPoint = currPoint
         }
-        return message
+
+        for (i in offsetMap) {
+            if (abs(i.y) == playfield.height - 1) {
+                i.y = -sign(i.y)
+            } else if (abs(i.x) == playfield.width - 1) {
+                i.x = -sign(i.x)
+            }
+        }
+
+        val iter1 = offsetMap.iterator()
+        var prevOffset = iter1.next()
+        var acc = prevOffset
+        while (iter1.hasNext()) {
+            val currOffset = iter1.next()
+            if (currOffset != prevOffset) {
+                tmp.add(acc)
+                acc = Point(0, 0)
+            }
+            acc += currOffset
+            prevOffset = currOffset
+        }
+        tmp.add(acc)
+        return tmp
+    }
+
+    fun setStateZombie() {
+        snakeState = SnakeProto.GameState.Snake.SnakeState.ZOMBIE
     }
 
     fun getSize(): Int {
         return body.size
     }
 
-    data class SnakeNode(
-        var isHead: Boolean = false,
-        var coordinates: Point = Point(0, 0)
-    )
+    fun getBody(): List<Point> {
+        return body
+    }
+
+    fun getState(): SnakeProto.GameState.Snake.SnakeState {
+        return snakeState
+    }
+
+    fun getHead(): Point {
+        return body.first
+    }
 
     companion object {
-        private fun createSnakeSpan(start: Point, offset: Point): List<SnakeNode> {
+        private fun createSnakeSpan(start: Point, offset: Point): List<Point> {
             assert(
                 (offset.x == 0) xor (offset.y == 0)
             ) { "Trying to create new snake with wrong coords: x1: ${start.x}, x2: ${offset.x}, y1: ${start.y},y2: ${offset.y}" }
 
-            val tmp = ArrayList<SnakeNode>()
+            val tmp = ArrayList<Point>()
             val step = Point(sign(offset.x), sign(offset.y))
             val delta = abs(if (offset.x == 0) offset.y else offset.x)
 
             for (i in 0 until delta) {
-                tmp.add(SnakeNode(false, start + (step * i)))
+                tmp.add(start + (step * i))
             }
             return tmp
         }
     }
-
 }
-
-

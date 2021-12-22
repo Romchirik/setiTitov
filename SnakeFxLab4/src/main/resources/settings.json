@@ -1,0 +1,10 @@
+{
+    "screenSizeX": 1280,
+    "screenSizeY": 720,
+    "mainWindowTitle": "Snake FX",
+
+    "multicastAddress": "239.192.0.4",
+    "multicastPort": 9192,
+
+    "playerName": "Cum provider"
+}

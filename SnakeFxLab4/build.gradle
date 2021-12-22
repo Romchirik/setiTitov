@@ -22,6 +22,7 @@ dependencies {
     implementation 'io.github.microutils:kotlin-logging:2.0.11'
     implementation 'org.slf4j:slf4j-simple:1.7.32'
 
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.0'
     implementation 'com.google.protobuf:protobuf-kotlin:3.19.1'
     implementation 'com.google.protobuf:protobuf-java:3.19.1'
     implementation 'org.openjfx:javafx:17.0.0.1'

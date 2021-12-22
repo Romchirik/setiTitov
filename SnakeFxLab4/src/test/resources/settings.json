@@ -1,0 +1,8 @@
+{
+    "screenSizeX": 1,
+    "screenSizeY": 2,
+    "mainWindowTitle": "Hui",
+
+    "multicastAddress": "1.1",
+    "multicastPort": 3
+}

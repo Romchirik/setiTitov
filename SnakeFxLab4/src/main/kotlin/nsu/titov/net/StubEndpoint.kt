@@ -1,27 +1,20 @@
 package nsu.titov.net
 
 import java.net.DatagramPacket
+import java.net.SocketTimeoutException
 
-class StubEndpoint : ConnectionEndpoint {
-    private var timeout = 0;
+class StubEndpoint(private val lag: Int) : ConnectionEndpoint {
+
+    override var soTimeout: Int = 50
 
     override fun receive(buffer: DatagramPacket) {
-        Thread.sleep(timeout.toLong())
+        Thread.sleep(lag.toLong())
+        throw SocketTimeoutException("Timeout lol")
     }
 
     override fun send(datagramPacket: DatagramPacket) {
     }
 
-    override fun setSoTimeout(timeout: Int) {
-        this.timeout = timeout
-    }
-
-    override fun getSoTimeout(): Int {
-        return timeout
-    }
-
     override fun close() {
-        TODO("Not yet implemented")
     }
-
 }

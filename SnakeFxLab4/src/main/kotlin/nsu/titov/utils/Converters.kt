@@ -1,6 +1,6 @@
 package nsu.titov.utils
 
-import nsu.titov.core.Point
+import nsu.titov.core.data.Point
 import nsu.titov.proto.SnakeProto
 
 fun coordToPoint(coord: SnakeProto.GameState.Coord): Point {
@@ -37,5 +37,14 @@ fun dirToPoint(direction: SnakeProto.Direction): Point {
         SnakeProto.Direction.DOWN -> Point(0, 1)
         SnakeProto.Direction.LEFT -> Point(-1, 0)
         SnakeProto.Direction.RIGHT -> Point(1, 0)
+    }
+}
+
+fun invertDir(direction: SnakeProto.Direction): SnakeProto.Direction {
+    return when (direction) {
+        SnakeProto.Direction.UP -> SnakeProto.Direction.DOWN
+        SnakeProto.Direction.DOWN -> SnakeProto.Direction.UP
+        SnakeProto.Direction.LEFT -> SnakeProto.Direction.RIGHT
+        SnakeProto.Direction.RIGHT -> SnakeProto.Direction.LEFT
     }
 }

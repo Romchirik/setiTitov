@@ -3,7 +3,12 @@ package nsu.titov.client
 import nsu.titov.proto.SnakeProto
 
 data class AnnounceItem(
-    var players: List<SnakeProto.GamePlayer>,
-    var config: SnakeProto.GameConfig,
-    var canJoin: Boolean = true
-)
+    val players: List<SnakeProto.GamePlayer>,
+    val config: SnakeProto.GameConfig,
+    val canJoin: Boolean,
+    val ip: String
+) {
+    override fun toString(): String {
+        return "$ip ${if (canJoin) "available" else "no places"}"
+    }
+}

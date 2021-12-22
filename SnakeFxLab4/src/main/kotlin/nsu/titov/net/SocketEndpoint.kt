@@ -7,9 +7,15 @@ import java.net.SocketAddress
 
 class SocketEndpoint : ConnectionEndpoint {
 
+    override var soTimeout: Int = DEFAULT_TIMEOUT
+        set(value) {
+            socket.soTimeout = value
+            field = value
+        }
+
     private val socket: DatagramSocket
 
-    constructor(port: Int, address: InetAddress) {
+    constructor(address: InetAddress, port: Int) {
         socket = DatagramSocket(port, address)
     }
 
@@ -29,16 +35,12 @@ class SocketEndpoint : ConnectionEndpoint {
         socket.send(datagramPacket)
     }
 
-    override fun setSoTimeout(timeout: Int) {
-        socket.soTimeout = timeout
-    }
-
-    override fun getSoTimeout(): Int {
-        return socket.soTimeout
-    }
-
     override fun close() {
         socket.close()
+    }
+
+    companion object {
+        const val DEFAULT_TIMEOUT = Int.MAX_VALUE
     }
 
 }

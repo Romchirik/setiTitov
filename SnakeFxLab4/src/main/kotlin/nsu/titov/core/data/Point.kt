@@ -1,9 +1,13 @@
-package nsu.titov.core
+package nsu.titov.core.data
 
 data class Point(
     var x: Int,
     var y: Int
 ) {
+    operator fun unaryMinus(): Point {
+        return Point(-x, -y)
+    }
+
     operator fun plus(increment: Point): Point {
         return Point(this.x + increment.x, this.y + increment.y)
     }
@@ -15,5 +19,4 @@ data class Point(
     operator fun minus(coordinates: Point): Point {
         return Point(this.x - coordinates.x, this.y - coordinates.y)
     }
-
 }

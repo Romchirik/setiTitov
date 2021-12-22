@@ -1,12 +1,14 @@
 package nsu.titov.app
 
 import javafx.application.Application
+import javafx.event.EventHandler
 import javafx.fxml.FXMLLoader
 import javafx.scene.Parent
 import javafx.scene.Scene
 import javafx.stage.Stage
 import mu.KotlinLogging
-import nsu.titov.utils.PropsProvider
+import nsu.titov.server.SnakeServerUtils
+import nsu.titov.settings.SettingsProvider
 
 
 class App : Application() {
@@ -16,9 +18,13 @@ class App : Application() {
         logger.info { "Starting ui" }
 
         val loader = FXMLLoader(javaClass.classLoader.getResource("main_screen.fxml"))
-        stage!!.title = PropsProvider.mainScreenTitle
+        stage!!.title = SettingsProvider.settings?.mainWindowTitle
         val view = loader.load<Parent>()
         val tmp = Scene(view)
+
+
+        stage.onCloseRequest = EventHandler { run { SnakeServerUtils.stopServer() } }
+
         stage.scene = tmp
         stage.show()
     }
