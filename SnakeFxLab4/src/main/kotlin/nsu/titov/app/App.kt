@@ -1,7 +1,9 @@
 package nsu.titov.app
 
 import javafx.application.Application
+import javafx.event.Event
 import javafx.event.EventHandler
+import javafx.event.EventType
 import javafx.fxml.FXMLLoader
 import javafx.scene.Parent
 import javafx.scene.Scene
@@ -18,13 +20,12 @@ class App : Application() {
         logger.info { "Starting ui" }
 
         val loader = FXMLLoader(javaClass.classLoader.getResource("main_screen.fxml"))
-        stage!!.title = SettingsProvider.settings?.mainWindowTitle
+        stage!!.title = SettingsProvider.getSettings().mainWindowTitle
         val view = loader.load<Parent>()
         val tmp = Scene(view)
 
 
         stage.onCloseRequest = EventHandler { run { SnakeServerUtils.stopServer() } }
-
         stage.scene = tmp
         stage.show()
     }

@@ -5,6 +5,6 @@
 
     "multicastAddress": "239.192.0.4",
     "multicastPort": 9192,
-
+    "announceDelayMs": 1000,
     "playerName": "Cum provider"
 }

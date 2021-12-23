@@ -51,16 +51,18 @@ class SnakeFX : Initializable {
 
 
     //TODO(move to global state)
-    private val role = NodeRole.VIEWER
+    private var role = NodeRole.VIEWER
     private val serverAddress = InetAddress.getLocalHost()
     private val serverPort = 6734
 
-    private val netWorker: NetWorker = ThreadNetWorker(SocketEndpoint(InetAddress.getLocalHost(), 6736))
-    private val netWorkerThread: Thread = Thread(netWorker)
+    private val netWorker: NetWorker = ThreadNetWorker(SocketEndpoint(InetAddress.getLocalHost(), 6158))
+    private val netWorkerThread: Thread = Thread(netWorker, "Client net worker thread")
+
+    private val announcer: AnnounceHandler = AnnounceHandler()
+    private val announcerThread: Thread = Thread(announcer, "Announcer thread")
 
 
     fun handleKeyboard(keyEvent: KeyEvent) {
-        logger.debug { "Handle keyboard triggered, key: ${keyEvent.code.char}" }
         val action: Direction = when (keyEvent.code) {
             KeyCode.W -> Direction.UP
             KeyCode.A -> Direction.LEFT
@@ -76,29 +78,35 @@ class SnakeFX : Initializable {
                     .newBuilder()
                     .setDirection(action)
                     .build()
+
+                //TODO пределать id а адекватный
                 val message: GameMessage = GameMessage.newBuilder()
                     .setMsgSeq(MessageIdProvider.getNextMessageId())
+                    .setSenderId(0)
                     .setSteer(steer)
                     .build()
+
+                netWorker.putMessage(message, serverAddress, serverPort)
             }
 
         }
     }
 
     fun handleExitGame() {
-        logger.debug { "Exit game button triggered" }
+
     }
 
     fun handleStartNewGame() {
-        logger.debug { "Start new game button triggered" }
         //TODO collect all data for starting and start server, now just stub data
 
-        val stub = ServerConfig()
+        val stub = ServerConfig(
+            fieldWidth = 10,
+            fieldHeight = 10
+        )
         SnakeServerUtils.startServer(stub)
     }
 
     fun handleJoinGame() {
-        logger.debug { "Join game button triggered" }
 //        val server = availableServers.selectionModel.selectedItem
 //        if (availableServers.selectionModel.selectedItem == null) {
 //            Platform.runLater { errorLabel.text = "Select server before joining game" }
@@ -107,12 +115,13 @@ class SnakeFX : Initializable {
 
         val joinMessage = GameMessage.newBuilder()
             .setJoin(
-                GameMessage.JoinMsg.newBuilder().setName(SettingsProvider.settings?.playerName).build()
+                GameMessage.JoinMsg.newBuilder().setName(SettingsProvider.getSettings().playerName).build()
             )
             .setMsgSeq(MessageIdProvider.getNextMessageId())
             .build()
 
         netWorker.putMessage(joinMessage, serverAddress, serverPort)
+        role = NodeRole.NORMAL
     }
 
     override fun initialize(location: URL?, resources: ResourceBundle?) {
@@ -139,9 +148,11 @@ class SnakeFX : Initializable {
 
 
         netWorker.subscribe(painter, GameMessage.TypeCase.STATE)
-        netWorker.subscribe(painter, GameMessage.TypeCase.ANNOUNCEMENT)
         netWorker.subscribe(painter, GameMessage.TypeCase.ERROR)
 
+        announcer.subscribe(painter, GameMessage.TypeCase.ANNOUNCEMENT)
+
         netWorkerThread.start()
+        announcerThread.start()
     }
 }

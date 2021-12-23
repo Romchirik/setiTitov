@@ -1,11 +1,11 @@
 package nsu.titov.utils
 
 object PlayerIdProvider {
-    private var nextPlayerId: Long = 0L;
+    private var nextPlayerId: Int = 0
 
     @Synchronized
-    fun getNextPlayerId(): Long {
+    fun getNextPlayerId(): Int {
         nextPlayerId++
-        return nextPlayerId - 1L
+        return nextPlayerId - 1
     }
 }

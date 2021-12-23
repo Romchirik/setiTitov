@@ -15,19 +15,15 @@ object SnakeServerUtils {
             server = SnakeServer(serverConfig)
             serverThread = Thread(server, "Snake server")
             serverThread?.start()
-        } else {
-            logger.warn { "Server already started, check your code and prevent double starting" }
         }
     }
 
     @Synchronized
     fun stopServer() {
-        if (serverThread == null) {
-            logger.info { "Unable to stop server? you don't started one" }
-            return
+        if (serverThread != null) {
+            server?.stop()
+            serverThread?.join()
+            logger.info { "Server stopped successfully" }
         }
-        server?.stop()
-        serverThread?.join()
-        logger.info { "Server stopped successfully" }
     }
 }

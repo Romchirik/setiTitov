@@ -113,24 +113,28 @@ class JavaFxPainter(bundle: Any) : Painter, Subscriber {
         bundle.currentGameInfoList.add("${player.score} ${player.name}")
     }
 
-    override fun addAvailableSever(server: SnakeProto.GameMessage.AnnouncementMsg) {
-        logger.info { "new server appeared" }
-        // TODO: 08.12.2021 add server info painting
+    override fun addAvailableSever(server: Message) {
+        logger.info { "New server appeared" }
+        val newAnnounceItem = AnnounceItem.fromProto(server)
+        if (bundle.availableServersList.find { announceItem -> announceItem.ip == newAnnounceItem.ip } != null) {
+            return
+        }
+        Platform.runLater { bundle.availableServersList.add(newAnnounceItem) }
     }
 
     @Synchronized
-    override fun update(msg: Message) {
-        val message = msg.msg
-        when (message.typeCase) {
+    override fun update(message: Message) {
+        val msg = message.msg
+        when (msg.typeCase) {
             SnakeProto.GameMessage.TypeCase.STATE ->
-                Platform.runLater { repaint(message.state) }
+                Platform.runLater { repaint(msg.state) }
             SnakeProto.GameMessage.TypeCase.ANNOUNCEMENT ->
-                Platform.runLater { addAvailableSever(message.announcement) }
+                Platform.runLater { addAvailableSever(message) }
             SnakeProto.GameMessage.TypeCase.ERROR -> {
-                Platform.runLater { addErrorMessage(message.error) }
+                Platform.runLater { addErrorMessage(msg.error) }
             }
             else -> logger.error {
-                "Painter received unacceptable message type: ${message.typeCase}"
+                "Painter received unacceptable message type: ${msg.typeCase}"
             }
         }
     }

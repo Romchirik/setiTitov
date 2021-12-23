@@ -15,6 +15,7 @@ class ThreadNetWorker(connectionEndpoint: ConnectionEndpoint) : NetWorker() {
     private val logger = KotlinLogging.logger {}
     private val outgoingQueue: Deque<Message> = ConcurrentLinkedDeque()
 
+    private var pendingMessage: Message? = null
     private var running = true
 
     init {
@@ -35,28 +36,39 @@ class ThreadNetWorker(connectionEndpoint: ConnectionEndpoint) : NetWorker() {
         } catch (e: SocketTimeoutException) {
             return null
         }
+
         val message = SnakeProto.GameMessage.parseFrom(Arrays.copyOf(packet.data, packet.length))
 
         if (message.typeCase == SnakeProto.GameMessage.TypeCase.ACK) {
-            return null
+            if (pendingMessage != null) {
+                if (pendingMessage!!.msg.msgSeq == message.msgSeq) {
+                    pendingMessage = null
+                    logger.debug { "Received ack for seq: ${message.msgSeq} " }
+                }
+            }
+        } else if (message.typeCase != SnakeProto.GameMessage.TypeCase.JOIN) {
+            val ack = SnakeProto.GameMessage.newBuilder().setAck(
+                SnakeProto.GameMessage.AckMsg.getDefaultInstance()
+            ).setMsgSeq(message!!.msgSeq).build().toByteArray()
+            endpoint.send(DatagramPacket(ack, ack.size, packet.address, packet.port))
         }
+
+
         logger.debug { "Received new message type of: ${message.typeCase}, from ${packet.address}" }
+        notifyMembers(Message(message, packet.address, packet.port), message.typeCase)
         return Message(message, packet.address, packet.port)
     }
 
     override fun run() {
         while (running) {
-            if (outgoingQueue.isNotEmpty()) {
+            if (outgoingQueue.isNotEmpty() && pendingMessage == null) {
                 val message = outgoingQueue.poll()
                 val arr = message.msg.toByteArray()
                 val packet = DatagramPacket(arr, arr.size, message.ip, message.port)
                 endpoint.send(packet)
+                logger.debug { "Message seq of ${message.msg.msgSeq} sent" }
             }
-
-            val message = receiveMessage()
-            if (message != null) {
-                notifyMembers(message, message.msg.typeCase)
-            }
+            receiveMessage()
         }
     }
 
@@ -72,7 +84,7 @@ class ThreadNetWorker(connectionEndpoint: ConnectionEndpoint) : NetWorker() {
     }
 
     companion object {
-        private const val TIMEOUT: Int = 50
+        private const val TIMEOUT: Int = 20
         private const val BUFFER_SIZE: Int = 8192
 
 

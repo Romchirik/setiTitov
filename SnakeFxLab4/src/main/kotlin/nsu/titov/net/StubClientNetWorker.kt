@@ -11,10 +11,10 @@ import java.net.InetAddress
 class StubClientNetWorker(private val delay: Long) : NetWorker(), Runnable {
 
     private val messages: ArrayDeque<GameMessage> = generateMessages()
-
-    override fun putMessage(messageBuilder: GameMessage.Builder, ip: InetAddress, port: Int) {
+    override fun putMessage(message: GameMessage, ip: InetAddress, port: Int) {
         TODO("Not yet implemented")
     }
+
 
     override fun stop() {
         TODO("Not yet implemented")

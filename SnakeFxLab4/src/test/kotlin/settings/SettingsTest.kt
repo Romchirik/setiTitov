@@ -9,14 +9,14 @@ class SettingsTest {
 
     @Test
     fun settingsTest(){
-        val settings = SettingsProvider.settings
+        val settings = SettingsProvider.getSettings()
 
-        assertEquals(settings?.screenSizeX, 1)
-        assertEquals(settings?.screenSizeY, 2)
-        assertEquals(settings?.mainWindowTitle, "Hui")
+        assertEquals(settings.screenSizeX, 1)
+        assertEquals(settings.screenSizeY, 2)
+        assertEquals(settings.mainWindowTitle, "Hui")
 
-        assertEquals(settings?.multicastAddress, "1.1")
-        assertEquals(settings?.multicastPort, 3)
+        assertEquals(settings.multicastAddress, "1.1")
+        assertEquals(settings.multicastPort, 3)
 
 
 

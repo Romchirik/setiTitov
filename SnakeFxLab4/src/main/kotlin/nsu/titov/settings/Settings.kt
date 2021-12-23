@@ -8,8 +8,8 @@ class Settings {
     var screenSizeY = 720
     var mainWindowTitle = "Snake FX"
 
-    var multicastAddress = "239.192.0.4"
-    var multicastPort = 6734
+    var multicastAddress: String = "239.192.0.4"
+    var multicastPort: Int = 9192
 
     var playerName = "Big flopper 228"
 }
