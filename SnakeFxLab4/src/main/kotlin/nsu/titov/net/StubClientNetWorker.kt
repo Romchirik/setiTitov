@@ -8,7 +8,7 @@ import nsu.titov.utils.MessageIdProvider
 import java.net.InetAddress
 
 
-class StubClientNetWorker(private val delay: Long) : NetWorker(), Runnable {
+class StubClientNetWorker(private val delay: Long) : NetWorker(StubEndpoint(0)), Runnable {
 
     private val messages: ArrayDeque<GameMessage> = generateMessages()
     override fun putMessage(message: GameMessage, ip: InetAddress, port: Int) {
@@ -17,6 +17,10 @@ class StubClientNetWorker(private val delay: Long) : NetWorker(), Runnable {
 
 
     override fun stop() {
+        TODO("Not yet implemented")
+    }
+
+    override fun setEndpoint(endpoint: ConnectionEndpoint): NetWorker {
         TODO("Not yet implemented")
     }
 

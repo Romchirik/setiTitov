@@ -7,7 +7,7 @@ import nsu.titov.proto.SnakeProto
 
 interface GameCore {
     fun tick()
-    fun addPlayer(player: PlayerWrapper): Boolean
+    fun addPlayer(id: Int, playerType: SnakeProto.PlayerType): Boolean
     fun removePlayer(id: Int)
     fun putTurn(id: Int, dir: SnakeProto.Direction)
 

@@ -10,9 +10,9 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" onKeyPressed="#handleKeyboard" prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="nsu.titov.client.SnakeFX">
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" onKeyPressed="#handleKeyboard" prefHeight="741.0" prefWidth="1207.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="nsu.titov.client.SnakeFX">
     <bottom>
-        <HBox alignment="TOP_RIGHT" nodeOrientation="LEFT_TO_RIGHT" style="-fx-background-color: #bfbfbf;" BorderPane.alignment="TOP_LEFT">
+        <HBox alignment="TOP_RIGHT" nodeOrientation="LEFT_TO_RIGHT" prefWidth="996.0" style="-fx-background-color: #bfbfbf;" BorderPane.alignment="TOP_LEFT">
             <Label fx:id="errorLabel" text="Here you will see some messages" textAlignment="RIGHT">
                 <font>
                     <Font size="15.0" />
@@ -32,7 +32,7 @@
                 <HBox.margin>
                     <Insets bottom="10.0" left="10.0" top="10.0" />
                 </HBox.margin>
-                <Canvas fx:id="canvas" height="400.0" width="400.0">
+                <Canvas fx:id="canvas" height="600.0" width="800.0">
                <VBox.margin>
                   <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
                </VBox.margin></Canvas>

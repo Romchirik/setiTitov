@@ -12,7 +12,7 @@ object SettingsProvider {
     }
 
     fun getSettings(): Settings {
-        if (settings == null) {
+        if (null == settings) {
             settings = loadSettings()
         }
         return settings!!

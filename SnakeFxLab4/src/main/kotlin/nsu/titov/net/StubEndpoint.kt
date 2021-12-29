@@ -17,4 +17,8 @@ class StubEndpoint(private val lag: Int) : ConnectionEndpoint {
 
     override fun close() {
     }
+
+    override fun getPort(): Int {
+        return 0
+    }
 }

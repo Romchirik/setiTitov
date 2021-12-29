@@ -7,6 +7,15 @@ object SnakeServerUtils {
     private var serverThread: Thread? = null
     private var server: Server? = null
 
+    @Synchronized
+    fun isRunning(): Boolean {
+        return serverThread != null
+    }
+
+    @Synchronized
+    fun getPort(): Int {
+        return server?.getPort() ?: -1
+    }
 
     @Synchronized
     fun startServer(serverConfig: ServerConfig) {

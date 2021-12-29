@@ -3,13 +3,12 @@ package nsu.titov.client
 import javafx.application.Platform
 import javafx.scene.paint.Color
 import mu.KotlinLogging
+import nsu.titov.core.Snake
+import nsu.titov.core.data.Playfield
 import nsu.titov.event.Subscriber
 import nsu.titov.net.Message
 import nsu.titov.proto.SnakeProto
 import nsu.titov.utils.coordToPoint
-import nsu.titov.utils.dirToPoint
-import nsu.titov.utils.pointToDir
-import kotlin.math.abs
 
 class JavaFxPainter(bundle: Any) : Painter, Subscriber {
     private val logger = KotlinLogging.logger {}
@@ -25,27 +24,17 @@ class JavaFxPainter(bundle: Any) : Painter, Subscriber {
         context.fillOval((CELL_SIZE * food.x).toDouble() + 4, (CELL_SIZE * food.y).toDouble() + 4, 12.0, 12.0)
     }
 
-    private fun paintSnake(snake: SnakeProto.GameState.Snake, color: Color) {
+    private fun paintSnake(snake: Snake, color: Color) {
         val context = bundle.canvas.graphicsContext2D
         context.fill = color
 
-        val points = snake.pointsList
-
-        var startPoint = coordToPoint(points[0])
-        for (i in 1 until points.size) {
-            val currOffset = coordToPoint(points[i])
-            val modOffset = if (currOffset.x == 0) abs(currOffset.y) else abs(currOffset.x)
-            val dirVec = dirToPoint(pointToDir(currOffset)) //to get unit vector
-
-            for (i in 0 until modOffset + 1) {
-                context.fillRect(
-                    (startPoint.x * CELL_SIZE).toDouble(),
-                    (startPoint.y * CELL_SIZE).toDouble(),
-                    CELL_SIZE.toDouble(),
-                    CELL_SIZE.toDouble()
-                )
-                startPoint += dirVec
-            }
+        snake.getBody().forEach { point ->
+            context.fillRect(
+                (point.x * CELL_SIZE).toDouble(),
+                (point.y * CELL_SIZE).toDouble(),
+                CELL_SIZE.toDouble(),
+                CELL_SIZE.toDouble()
+            )
         }
     }
 
@@ -75,8 +64,6 @@ class JavaFxPainter(bundle: Any) : Painter, Subscriber {
     }
 
     override fun repaint(state: SnakeProto.GameMessage.StateMsg) {
-        logger.info { "field repaint started" }
-
         // 1. Paint grid
         paintGrid(state.state.config.width, state.state.config.height)
 
@@ -86,8 +73,12 @@ class JavaFxPainter(bundle: Any) : Painter, Subscriber {
         }
         // 3. Paint snakes
         state.state.snakesList.forEach { snake ->
-            paintSnake(snake, Color.BLACK)
+            val tmp = snake.pointsList.map { coord -> coordToPoint(coord) }
+            val snek = Snake(tmp, Playfield(state.state.config.width, state.state.config.height))
+            val color = if (snake.playerId == StateProvider.getState().id) Color.RED else Color.BLACK
+            paintSnake(snek, color)
         }
+
         // 4. Paint players
         bundle.currentGameInfoList.clear()
         state.state.players.playersList.forEach { player ->
@@ -103,23 +94,18 @@ class JavaFxPainter(bundle: Any) : Painter, Subscriber {
 
     }
 
+    override fun repaintAvailableServers(aboba: List<AnnounceItem>) {
+        bundle.availableServersList.clear()
+        bundle.availableServersList.addAll(aboba)
+    }
+
     private fun paintConfig(config: SnakeProto.GameConfig) {
         bundle.foodRuleLabel.text = "Food rule: ${config.foodStatic}+${config.deadFoodProb}*x"
         bundle.fieldSizeLabel.text = "Field size: ${config.width}x${config.height}"
     }
 
     private fun paintPlayer(player: SnakeProto.GamePlayer) {
-
         bundle.currentGameInfoList.add("${player.score} ${player.name}")
-    }
-
-    override fun addAvailableSever(server: Message) {
-        logger.info { "New server appeared" }
-        val newAnnounceItem = AnnounceItem.fromProto(server)
-        if (bundle.availableServersList.find { announceItem -> announceItem.ip == newAnnounceItem.ip } != null) {
-            return
-        }
-        Platform.runLater { bundle.availableServersList.add(newAnnounceItem) }
     }
 
     @Synchronized
@@ -128,8 +114,6 @@ class JavaFxPainter(bundle: Any) : Painter, Subscriber {
         when (msg.typeCase) {
             SnakeProto.GameMessage.TypeCase.STATE ->
                 Platform.runLater { repaint(msg.state) }
-            SnakeProto.GameMessage.TypeCase.ANNOUNCEMENT ->
-                Platform.runLater { addAvailableSever(message) }
             SnakeProto.GameMessage.TypeCase.ERROR -> {
                 Platform.runLater { addErrorMessage(msg.error) }
             }

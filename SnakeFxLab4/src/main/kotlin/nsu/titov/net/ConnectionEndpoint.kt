@@ -10,4 +10,6 @@ interface ConnectionEndpoint {
     fun send(datagramPacket: DatagramPacket)
 
     fun close()
+
+    fun getPort(): Int
 }

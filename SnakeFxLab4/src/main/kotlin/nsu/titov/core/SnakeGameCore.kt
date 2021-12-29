@@ -1,23 +1,22 @@
 package nsu.titov.core
 
 import mu.KotlinLogging
+import nsu.titov.core.data.CoreConfig
 import nsu.titov.core.data.PlayerWrapper
 import nsu.titov.core.data.Playfield
 import nsu.titov.core.data.Point
 import nsu.titov.proto.SnakeProto
 
-class SnakeGameCore(fieldSize: Point) : GameCore {
+class SnakeGameCore(private val config: CoreConfig) : GameCore {
     private val logger = KotlinLogging.logger {}
 
     //entities
     private val snakes: MutableMap<Int, Snake> = HashMap()
     private val players: MutableMap<Int, PlayerWrapper> = HashMap()
-    private val foods: MutableMap<Point, Boolean> = HashMap()
-    private val playfield: Playfield
+    private val foods: MutableList<Point> = ArrayList()
+    private val playfield: Playfield = Playfield(config.width, config.height)
 
-    init {
-        playfield = Playfield(fieldSize.x, fieldSize.y)
-    }
+    private var targetFoodCount = config.foodStatic + players.size * config.foodPerPlayer
 
     /**
      *  Game cycle:
@@ -27,25 +26,32 @@ class SnakeGameCore(fieldSize: Point) : GameCore {
      *  4. Return new result
      */
     override fun tick() {
-        logger.debug { "Updating game state" }
+//        logger.debug { "Updating game state" }
+        targetFoodCount = config.foodStatic + players.size * config.foodPerPlayer
 
         players.forEach { (id, player) -> snakes[id]?.direction = player.lastTurn }
         snakes.forEach { (_, snake) -> snake.tick() }
 
-//        check snakes collisions
-//        val removeIds: MutableList<Int> = ArrayList()
-//        snakes.forEach { (id0, snake0) ->
-//            snakes.forEach { (id1, snake1) ->
-//                if (snake1 === snake0) {
-//                    return
-//                }
-//                if (snake0.ifCollide(snake1.getHead())) {
-//                    removeIds.add(id1)
-//                }
-//            }
-//        }
+        val removeIds: MutableSet<Int> = HashSet()
+        snakes.forEach { (id0, snake0) ->
+            snakes.forEach { (id1, snake1) ->
+                if (id0 != id1 && snake0.ifCollide(snake1.getHead())) {
+                    removeIds.add(id1)
+                }
+            }
+        }
 
 
+        snakes.forEach { (_, snake) ->
+
+
+        }
+
+
+    }
+
+    private fun checkFree(point: Point): Boolean {
+        return true;
     }
 
     override fun putTurn(id: Int, dir: SnakeProto.Direction) {
@@ -54,8 +60,9 @@ class SnakeGameCore(fieldSize: Point) : GameCore {
     }
 
     //TODO доделать адекватное добавление игрока
-    //TODO replace player wrapper with id and player type
-    override fun addPlayer(player: PlayerWrapper): Boolean {
+    override fun addPlayer(id: Int, playerType: SnakeProto.PlayerType): Boolean {
+        val player =
+            PlayerWrapper(id = id, playerType = playerType, lastTurn = SnakeProto.Direction.DOWN)
         if (players[player.id] != null) {
             logger.warn { "Trying to add player with existing id: ${player.id}" }
             return false
@@ -64,7 +71,7 @@ class SnakeGameCore(fieldSize: Point) : GameCore {
         //TODO trying to find free place
         players[player.id] = player
         //TODO add new snake remove playfield((
-        snakes[player.id] = Snake(Point(0, 1), Point(0, -1), playfield)
+        snakes[player.id] = Snake(Point(0, 7), Point(0, -7), playfield)
         return true
     }
 
@@ -83,7 +90,7 @@ class SnakeGameCore(fieldSize: Point) : GameCore {
     }
 
     override fun getFoods(): List<Point> {
-        return foods.keys.toList()
+        return foods
     }
 
     override fun getSnakes(): Map<Int, Snake> {

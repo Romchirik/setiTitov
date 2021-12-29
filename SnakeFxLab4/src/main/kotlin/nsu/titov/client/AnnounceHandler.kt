@@ -1,16 +1,19 @@
 package nsu.titov.client
 
+import javafx.collections.ObservableList
 import mu.KotlinLogging
 import nsu.titov.event.Publisher
 import nsu.titov.net.Message
+import nsu.titov.net.SocketEndpoint
 import nsu.titov.proto.SnakeProto
 import nsu.titov.settings.SettingsProvider
 import java.net.DatagramPacket
 import java.net.InetAddress
 import java.net.MulticastSocket
+import java.net.SocketTimeoutException
 import java.util.*
 
-class AnnounceHandler : Publisher(), Runnable {
+class AnnounceHandler() : Publisher(), Runnable {
     private val multicastAddress: InetAddress
     private val multicastPort: Int
     private val socket: MulticastSocket
@@ -27,14 +30,17 @@ class AnnounceHandler : Publisher(), Runnable {
     }
 
 
+
     override fun run() {
         initialize()
         while (running) {
-
             val packet = DatagramPacket(ByteArray(BUFFER_SIZE), BUFFER_SIZE)
-
-
-            socket.receive(packet)
+            try {
+                socket.soTimeout = SettingsProvider.getSettings().announceDelayMs
+                socket.receive(packet)
+            } catch (_: SocketTimeoutException) {
+                continue
+            }
 
             val message = SnakeProto.GameMessage.parseFrom(Arrays.copyOf(packet.data, packet.length))!!
             if (message.typeCase != SnakeProto.GameMessage.TypeCase.ANNOUNCEMENT) {
@@ -57,6 +63,5 @@ class AnnounceHandler : Publisher(), Runnable {
 
     companion object {
         private const val BUFFER_SIZE: Int = 4096
-        private const val SOCKET_TIMEOUT_MS = 500
     }
 }

@@ -39,6 +39,10 @@ class SocketEndpoint : ConnectionEndpoint {
         socket.close()
     }
 
+    override fun getPort(): Int {
+        return socket.localPort
+    }
+
     companion object {
         const val DEFAULT_TIMEOUT = Int.MAX_VALUE
     }

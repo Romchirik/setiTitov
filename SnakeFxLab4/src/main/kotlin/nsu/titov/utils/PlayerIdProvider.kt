@@ -1,7 +1,7 @@
 package nsu.titov.utils
 
 object PlayerIdProvider {
-    private var nextPlayerId: Int = 0
+    private var nextPlayerId: Int = 1
 
     @Synchronized
     fun getNextPlayerId(): Int {

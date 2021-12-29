@@ -4,7 +4,6 @@ import nsu.titov.core.data.Playfield
 import nsu.titov.core.data.Point
 import nsu.titov.proto.SnakeProto
 import nsu.titov.utils.dirToPoint
-import nsu.titov.utils.invertDir
 import nsu.titov.utils.pointToDir
 import nsu.titov.utils.sign
 import java.util.*
@@ -13,13 +12,8 @@ import kotlin.math.abs
 
 class Snake : Collidable {
     private var snakeState: SnakeProto.GameState.Snake.SnakeState = SnakeProto.GameState.Snake.SnakeState.ALIVE
-    private lateinit var playfield: Playfield
+    private var playfield: Playfield
     var direction: SnakeProto.Direction = SnakeProto.Direction.UP
-        set(value) {
-            if (value != invertDir(direction)) {
-                field = value
-            }
-        }
     private var body: LinkedList<Point> = LinkedList()
 
     /** Creates a snake from 2 points (points validation included), first point is interpreted as snake head,
@@ -34,6 +28,7 @@ class Snake : Collidable {
     constructor (head: Point, offset: Point, playfield: Playfield) {
         this.playfield = playfield
         body.addAll(createSnakeSpan(head, offset))
+        body.add(head + offset)
         direction = pointToDir(-offset)
         body.forEach { point -> playfield.normalizeDirty(point) }
 

@@ -7,7 +7,8 @@ import java.net.InetAddress
 data class AnnounceItem(
     val playersCount: Int,
     val canJoin: Boolean,
-    val ip: InetAddress
+    val ip: InetAddress,
+    val port: Int
 ) {
     override fun toString(): String {
         return "${ip.toString().removePrefix("/")} ${if (canJoin) "available" else "no places"}, players: $playersCount"
@@ -20,11 +21,12 @@ data class AnnounceItem(
             assert(message.msg.typeCase != SnakeProto.GameMessage.TypeCase.ANNOUNCEMENT)
             { "Unable to build AnnounceItem from not an announcement message" }
 
-
             return AnnounceItem(
                 playersCount = message.msg.announcement.players.playersCount,
                 canJoin = message.msg.announcement.canJoin,
-                ip = message.ip
+                ip = message.ip,
+                port = message.port
+
             )
         }
     }
