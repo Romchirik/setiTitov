@@ -1,10 +1,8 @@
 package nsu.titov.client
 
-import javafx.collections.ObservableList
 import mu.KotlinLogging
 import nsu.titov.event.Publisher
 import nsu.titov.net.Message
-import nsu.titov.net.SocketEndpoint
 import nsu.titov.proto.SnakeProto
 import nsu.titov.settings.SettingsProvider
 import java.net.DatagramPacket
@@ -30,7 +28,6 @@ class AnnounceHandler() : Publisher(), Runnable {
     }
 
 
-
     override fun run() {
         initialize()
         while (running) {
@@ -47,7 +44,6 @@ class AnnounceHandler() : Publisher(), Runnable {
                 logger.error { "Announcer received not an announce message" }
                 continue
             }
-            logger.info { "New server appeared" }
             notifyMembers(Message(message, packet.address, packet.port), SnakeProto.GameMessage.TypeCase.ANNOUNCEMENT)
         }
     }

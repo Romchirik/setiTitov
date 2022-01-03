@@ -8,6 +8,5 @@ data class ClientState(
     var role: SnakeProto.NodeRole = SnakeProto.NodeRole.VIEWER,
     var serverAddress: InetAddress = InetAddress.getLocalHost(),
     var serverPort: Int = 0,
-) {
-
-}
+    var lastGameState: SnakeProto.GameState? = null
+)

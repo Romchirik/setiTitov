@@ -20,12 +20,13 @@ class JavaFxPainter(bundle: Any) : Painter, Subscriber {
 
     private fun paintFood(food: SnakeProto.GameState.Coord) {
         val context = bundle.canvas.graphicsContext2D
-        context.fill = Color.YELLOW
+        context.fill = Color.GREEN
         context.fillOval((CELL_SIZE * food.x).toDouble() + 4, (CELL_SIZE * food.y).toDouble() + 4, 12.0, 12.0)
     }
 
     private fun paintSnake(snake: Snake, color: Color) {
         val context = bundle.canvas.graphicsContext2D
+
         context.fill = color
 
         snake.getBody().forEach { point ->

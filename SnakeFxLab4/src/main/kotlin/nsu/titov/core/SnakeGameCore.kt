@@ -6,6 +6,8 @@ import nsu.titov.core.data.PlayerWrapper
 import nsu.titov.core.data.Playfield
 import nsu.titov.core.data.Point
 import nsu.titov.proto.SnakeProto
+import nsu.titov.utils.invertDir
+import java.util.*
 
 class SnakeGameCore(private val config: CoreConfig) : GameCore {
     private val logger = KotlinLogging.logger {}
@@ -16,7 +18,9 @@ class SnakeGameCore(private val config: CoreConfig) : GameCore {
     private val foods: MutableList<Point> = ArrayList()
     private val playfield: Playfield = Playfield(config.width, config.height)
 
-    private var targetFoodCount = config.foodStatic + players.size * config.foodPerPlayer
+    private var targetFoodCount: Int = (config.foodStatic + players.size * config.foodPerPlayer).toInt()
+
+    private var randomNumberGenerator: Random = Random(System.nanoTime())
 
     /**
      *  Game cycle:
@@ -27,7 +31,7 @@ class SnakeGameCore(private val config: CoreConfig) : GameCore {
      */
     override fun tick() {
 //        logger.debug { "Updating game state" }
-        targetFoodCount = config.foodStatic + players.size * config.foodPerPlayer
+        targetFoodCount = (config.foodStatic + players.size * config.foodPerPlayer).toInt()
 
         players.forEach { (id, player) -> snakes[id]?.direction = player.lastTurn }
         snakes.forEach { (_, snake) -> snake.tick() }
@@ -39,23 +43,65 @@ class SnakeGameCore(private val config: CoreConfig) : GameCore {
                     removeIds.add(id1)
                 }
             }
+            if (snake0.selfCollide()) {
+                removeIds.add(id0)
+            }
+        }
+
+        removeIds.forEach { id ->
+            snakes.remove(id)
+            players.remove(id)
+        }
+
+        val eatenFoods: MutableSet<Point> = HashSet()
+        snakes.forEach { (id, snake) ->
+            foods.forEach { food ->
+                if (snake.ifCollide(food)) {
+                    if (eatenFoods.add(food)) {
+                        snake.grow()
+                        players[id]!!.score++
+                    }
+                }
+            }
+        }
+        eatenFoods.forEach { food -> foods.remove(food) }
+
+        if (foods.size < targetFoodCount) {
+            for (i in 0 until targetFoodCount - foods.size) {
+                foods.add(generateFood())
+            }
         }
 
 
-        snakes.forEach { (_, snake) ->
+    }
 
+    private fun generateFood(): Point {
+        while (true) {
+            val x = randomNumberGenerator.nextInt()
+            val y = randomNumberGenerator.nextInt()
+            val point = Point(x, y)
+            playfield.normalizeDirty(point)
 
+            if (!checkCollisions(point)) return point
         }
+    }
 
-
+    private fun checkCollisions(point: Point): Boolean {
+        for (snake in snakes) {
+            if (snake.value.ifCollide(point)) {
+                return true
+            }
+        }
+        if (point in foods) return true
+        return false
     }
 
     private fun checkFree(point: Point): Boolean {
-        return true;
+        return true
     }
 
     override fun putTurn(id: Int, dir: SnakeProto.Direction) {
-        players[id]?.let { wrapper -> wrapper.lastTurn = dir }
+        players[id]?.let { wrapper -> wrapper.lastTurn = if (dir != invertDir(wrapper.lastTurn)) dir else return }
             ?: logger.error { "Player with id: $id not found, unable put next turn" }
     }
 
@@ -71,7 +117,7 @@ class SnakeGameCore(private val config: CoreConfig) : GameCore {
         //TODO trying to find free place
         players[player.id] = player
         //TODO add new snake remove playfield((
-        snakes[player.id] = Snake(Point(0, 7), Point(0, -7), playfield)
+        snakes[player.id] = Snake(Point(0, 1), Point(0, -1), playfield)
         return true
     }
 

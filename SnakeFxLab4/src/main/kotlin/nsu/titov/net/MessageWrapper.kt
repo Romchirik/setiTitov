@@ -2,6 +2,7 @@ package nsu.titov.net
 
 data class MessageWrapper(
     val message: Message,
-    val sendTime: Long
+    val firstSendTime: Long,
+    var resendTime: Long
 ) {
 }

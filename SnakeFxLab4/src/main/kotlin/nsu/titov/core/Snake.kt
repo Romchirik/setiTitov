@@ -137,6 +137,18 @@ class Snake : Collidable {
         return body.first
     }
 
+    fun selfCollide(): Boolean {
+        val head = body.first
+        for(item in body) {
+            if(item !== head) {
+                if(head == item) {
+                    return true
+                }
+            }
+        }
+        return false
+    }
+
     companion object {
         private fun createSnakeSpan(start: Point, offset: Point): List<Point> {
             assert(

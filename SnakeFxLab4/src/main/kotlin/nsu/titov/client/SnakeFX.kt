@@ -61,7 +61,7 @@ class SnakeFX : Initializable, Subscriber {
     ) { fireAnnounceUpdate() }
 
 
-    private val netWorker: NetWorker = ClientThreadNetWorker(SocketEndpoint(0))
+    private val netWorker: NetWorker = ClientThreadNetWorker()
     private val netWorkerThread: Thread = Thread(netWorker, "Client net worker")
 
     private val announcer: AnnounceHandler = AnnounceHandler()
@@ -85,8 +85,8 @@ class SnakeFX : Initializable, Subscriber {
                     availableServersList.find { announceItem ->
                         announceItem.ip == selectedItem.ip && announceItem.port == selectedItem.port
                     }
-                if (null != tmp){
-                    if(tmp.canJoin) {
+                if (null != tmp) {
+                    if (tmp.canJoin) {
                         availableServers.selectionModel.select(tmp)
                     }
                 }
@@ -95,7 +95,7 @@ class SnakeFX : Initializable, Subscriber {
     }
 
     fun handleKeyboard(keyEvent: KeyEvent) {
-        if (StateProvider.getState().id == 0) {
+        if (0 == StateProvider.getState().id) {
             logger.warn { "Client not connected, unable to handle steer" }
             return
         }
@@ -133,6 +133,16 @@ class SnakeFX : Initializable, Subscriber {
         if (0 == StateProvider.getState().id) {
             return
         }
+        val message = GameMessage.newBuilder()
+            .setRoleChange(GameMessage.RoleChangeMsg.newBuilder().setSenderRole(NodeRole.VIEWER).build())
+            .setSenderId(StateProvider.getState().id)
+            .setMsgSeq(MessageIdProvider.getNextMessageId())
+            .build()
+
+        netWorker.putMessage(message, StateProvider.getState().serverAddress, StateProvider.getState().serverPort)
+        StateProvider.getState().role = NodeRole.VIEWER
+        StateProvider.getState().id = 0
+        netWorker.subscribe(this, GameMessage.TypeCase.ACK)
     }
 
     fun handleStartNewGame() {
@@ -232,6 +242,8 @@ class SnakeFX : Initializable, Subscriber {
 
         netWorker.subscribe(this, GameMessage.TypeCase.ACK)
         netWorker.subscribe(this, GameMessage.TypeCase.ROLE_CHANGE)
+        netWorker.subscribe(this, GameMessage.TypeCase.STATE)
+
         netWorker.subscribe(painter, GameMessage.TypeCase.STATE)
         netWorker.subscribe(painter, GameMessage.TypeCase.ERROR)
 

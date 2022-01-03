@@ -5,7 +5,6 @@ import nsu.titov.net.Message
 import nsu.titov.net.NetWorker
 import nsu.titov.net.SocketEndpoint
 import nsu.titov.proto.SnakeProto
-import java.net.DatagramPacket
 import java.net.InetAddress
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedDeque
@@ -32,31 +31,22 @@ class ClientThreadNetWorker : NetWorker {
         while (running) {
             if (outgoingQueue.isNotEmpty() && pendingMessage == null) {
                 val message = outgoingQueue.poll()
-                val arr = message.msg.toByteArray()
-                val packet = DatagramPacket(arr, arr.size, message.ip, message.port)
-                endpoint.send(packet)
-                logger.debug { "Message seq of ${message.msg.msgSeq} sent" }
+                sendMessage(message)
             }
 
-            val msg = receiveMessage()
-            if (msg != null) {
-                if (msg.msg.typeCase == SnakeProto.GameMessage.TypeCase.ACK) {
+            val message = receiveMessage()
+            if (message != null) {
+                sendAck(message)
+                if (message.msg.typeCase == SnakeProto.GameMessage.TypeCase.ACK) {
                     if (pendingMessage != null) {
-                        if (pendingMessage!!.msg.msgSeq == msg.msg.msgSeq) {
+                        if (pendingMessage!!.msg.msgSeq <= message.msg.msgSeq) {
                             pendingMessage = null
-                            logger.debug { "Received ack for seq: ${msg.msg.msgSeq} " }
+                            logger.trace { "Message (msgSeq: ${message.msg.msgSeq}) confirmed" }
                         }
                     }
-                } else if (msg.msg.typeCase != SnakeProto.GameMessage.TypeCase.JOIN) {
-                    val ack = SnakeProto.GameMessage.newBuilder().setAck(
-                        SnakeProto.GameMessage.AckMsg.getDefaultInstance()
-                    ).setMsgSeq(msg.msg.msgSeq).build().toByteArray()
-                    endpoint.send(DatagramPacket(ack, ack.size, msg.ip, msg.port))
                 }
-
-
-                logger.debug { "Received new message type of: ${msg.msg.typeCase}, from ${msg.ip}" }
-                notifyMembers(msg, msg.msg.typeCase)
+                logger.trace { "Received new message type of: ${message.msg.typeCase}, from ${message.ip}" }
+                notifyMembers(message, message.msg.typeCase)
             }
         }
     }
@@ -64,12 +54,12 @@ class ClientThreadNetWorker : NetWorker {
     @Synchronized
     override fun putMessage(message: SnakeProto.GameMessage, ip: InetAddress, port: Int) {
         outgoingQueue.push(Message(message, ip, port))
-        logger.debug { "New message of type: ${message.typeCase} in queue, seq: ${message.msgSeq} " }
+        logger.trace { "New message of type: ${message.typeCase} in queue, seq: ${message.msgSeq} " }
     }
 
     override fun stop() {
         running = false
-        logger.debug { "Network thread will be finished as soon as possible" }
+        logger.info { "Network thread will be finished as soon as possible" }
     }
 
 }

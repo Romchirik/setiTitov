@@ -33,6 +33,29 @@ abstract class NetWorker(protected var endpoint: ConnectionEndpoint) : Publisher
         return Message(message, packet.address, packet.port)
     }
 
+    protected fun sendMessage(message: Message) {
+        val arr = message.msg.toByteArray()
+        val packet = DatagramPacket(arr, arr.size, message.ip, message.port)
+        endpoint.send(packet)
+        logger.trace { "Message seq of ${message.msg.msgSeq} sent" }
+    }
+
+    protected fun sendAck(message: Message) {
+        if (message.msg.typeCase == SnakeProto.GameMessage.TypeCase.JOIN ||
+            message.msg.typeCase == SnakeProto.GameMessage.TypeCase.ACK ||
+            message.msg.typeCase == SnakeProto.GameMessage.TypeCase.ANNOUNCEMENT
+        ) {
+            return
+        }
+
+        val ack = SnakeProto.GameMessage.newBuilder()
+            .setAck(SnakeProto.GameMessage.AckMsg.getDefaultInstance())
+            .setMsgSeq(message.msg.msgSeq)
+            .build()
+
+        sendMessage(Message(ack, message.ip, message.port))
+    }
+
 
     companion object {
         internal const val TIMEOUT: Int = 20
