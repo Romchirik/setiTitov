@@ -83,21 +83,30 @@ class JavaFxPainter(bundle: Any) : Painter, Subscriber {
         // 4. Paint players
         bundle.currentGameInfoList.clear()
         state.state.players.playersList.forEach { player ->
-            if (player.role == SnakeProto.NodeRole.MASTER) {
-                // 5. Paint config
-                bundle.hostNameLabel.text = "Host name: ${player.name}"
+            if (player.id == StateProvider.getState().id) {
+                bundle.hostNameLabel.text = "${player.role}"
+                bundle.fieldSizeLabel.text = "${player.id}"
             }
+//            if (player.role == SnakeProto.NodeRole.MASTER) {
+//                // 5. Paint config
+//                bundle.hostNameLabel.text = "Host name: ${player.name}"
+//            }
             paintPlayer(player)
         }
 
         // 5. Paint config
-        paintConfig(state.state.config)
+//        paintConfig(state.state.config)
 
     }
 
     override fun repaintAvailableServers(aboba: List<AnnounceItem>) {
         bundle.availableServersList.clear()
         bundle.availableServersList.addAll(aboba)
+    }
+
+    override fun clearPlayfield() {
+        val context = bundle.canvas.graphicsContext2D
+        context.clearRect(0.0, 0.0, bundle.canvas.width, bundle.canvas.height)
     }
 
     private fun paintConfig(config: SnakeProto.GameConfig) {

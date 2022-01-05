@@ -1,6 +1,8 @@
 package nsu.titov.server
 
 import mu.KotlinLogging
+import nsu.titov.client.StateProvider
+import nsu.titov.proto.SnakeProto
 
 object SnakeServerUtils {
     private val logger = KotlinLogging.logger {}
@@ -25,6 +27,16 @@ object SnakeServerUtils {
             serverThread = Thread(server, "Snake server")
             serverThread?.start()
         }
+    }
+
+    @Synchronized
+    fun restoreServer(message: SnakeProto.GameMessage.StateMsg) {
+        if (serverThread == null) {
+            server = SnakeServer.fromProto(message.state, StateProvider.getState().id)
+            serverThread = Thread(server, "Snake server")
+            serverThread?.start()
+        }
+
     }
 
     @Synchronized

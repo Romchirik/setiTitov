@@ -6,6 +6,7 @@ import nsu.titov.core.data.PlayerWrapper
 import nsu.titov.core.data.Playfield
 import nsu.titov.core.data.Point
 import nsu.titov.proto.SnakeProto
+import nsu.titov.utils.coordToPoint
 import nsu.titov.utils.invertDir
 import java.util.*
 
@@ -141,5 +142,50 @@ class SnakeGameCore(private val config: CoreConfig) : GameCore {
 
     override fun getSnakes(): Map<Int, Snake> {
         return snakes
+    }
+
+
+    companion object {
+        fun fromProtoState(state: SnakeProto.GameState): SnakeGameCore {
+
+            val tmp = SnakeGameCore(
+                CoreConfig(
+                    width = state.config.width,
+                    height = state.config.height,
+                    foodStatic = state.config.foodStatic,
+                    foodPerPlayer = state.config.foodPerPlayer,
+                    deadFoodProbe = state.config.deadFoodProb
+                )
+            )
+
+            //restoring foods
+            state.foodsList.forEach { food ->
+                tmp.foods.add(coordToPoint(food))
+            }
+
+            //restoring snakes
+            val playfield = Playfield(state.config.width, state.config.height)
+            state.snakesList.forEach { snake ->
+                val mySnake = Snake(snake.pointsList.map { coord -> coordToPoint(coord) }, playfield)
+                mySnake.direction = snake.headDirection
+                if (SnakeProto.GameState.Snake.SnakeState.ZOMBIE == snake.state) {
+                    mySnake.setStateZombie()
+                }
+                tmp.snakes[snake.playerId] = mySnake
+            }
+
+            //restoring players
+            state.players.playersList.forEach { player ->
+                tmp.players[player.id] = PlayerWrapper(
+                    id = player.id,
+                    playerType = player.type,
+                    lastTurn = tmp.snakes[player.id]!!.direction,
+                    score = player.score
+                )
+            }
+
+
+            return tmp
+        }
     }
 }

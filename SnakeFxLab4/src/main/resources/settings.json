@@ -14,5 +14,5 @@
 
     "stateTickDelayMs": 100,
     "pingDelayMs": 100,
-    "timeoutDelayMs": 800
+    "timeoutDelayMs": 1000000
 }

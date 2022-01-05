@@ -13,7 +13,6 @@ import mu.KotlinLogging
 import nsu.titov.event.Subscriber
 import nsu.titov.net.Message
 import nsu.titov.net.NetWorker
-import nsu.titov.net.SocketEndpoint
 import nsu.titov.net.client.ClientThreadNetWorker
 import nsu.titov.proto.SnakeProto.*
 import nsu.titov.server.ServerConfig
@@ -196,8 +195,13 @@ class SnakeFX : Initializable, Subscriber {
             GameMessage.TypeCase.ACK -> handleAck(message)
             GameMessage.TypeCase.ROLE_CHANGE -> handleRoleChange(message.msg)
             GameMessage.TypeCase.ANNOUNCEMENT -> handleAnnounce(message)
+            GameMessage.TypeCase.ERROR -> handleError(message)
             else -> return
         }
+    }
+
+    private fun handleError(message: Message) {
+        val error = message.msg.error
     }
 
     private fun handleAnnounce(msg: Message) {
@@ -243,6 +247,7 @@ class SnakeFX : Initializable, Subscriber {
         netWorker.subscribe(this, GameMessage.TypeCase.ACK)
         netWorker.subscribe(this, GameMessage.TypeCase.ROLE_CHANGE)
         netWorker.subscribe(this, GameMessage.TypeCase.STATE)
+        netWorker.subscribe(this, GameMessage.TypeCase.ERROR)
 
         netWorker.subscribe(painter, GameMessage.TypeCase.STATE)
         netWorker.subscribe(painter, GameMessage.TypeCase.ERROR)

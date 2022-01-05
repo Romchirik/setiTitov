@@ -14,4 +14,5 @@ interface GameCore {
     fun getPlayers(): Map<Int, PlayerWrapper>
     fun getSnakes(): Map<Int, Snake>
     fun getFoods(): List<Point>
+
 }

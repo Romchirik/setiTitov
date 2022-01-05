@@ -19,7 +19,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 class SnakeServer(private val serverConfig: ServerConfig) : Publisher(), Subscriber, Server {
-    private val gameCore: GameCore
+    private var gameCore: GameCore
 
     init {
         gameCore = SnakeGameCore(
@@ -42,6 +42,7 @@ class SnakeServer(private val serverConfig: ServerConfig) : Publisher(), Subscri
 
     private val multicastAddress = InetAddress.getByName(SettingsProvider.getSettings().multicastAddress)
     private val multicastPort = SettingsProvider.getSettings().multicastPort
+
 
     private fun fireAnnounce() {
         val announce = AnnounceBuilder.getBuilder()
@@ -78,7 +79,7 @@ class SnakeServer(private val serverConfig: ServerConfig) : Publisher(), Subscri
             .setConfig(serverConfig)
             .setSnakes(gameCore.getSnakes())
             .setFoods(gameCore.getFoods())
-            .setPlayers(players.filter { player -> player.value.role != SnakeProto.NodeRole.VIEWER })
+            .setPlayers(players)
             .build()
 
 
@@ -156,6 +157,10 @@ class SnakeServer(private val serverConfig: ServerConfig) : Publisher(), Subscri
         netWorker.putMessage(message0, message.ip, message.port)
 
         logger.info { "New player accepted id: $newId" }
+
+        if(players.size == 2) {
+            selectNewDeputy()
+        }
     }
 
 
@@ -203,12 +208,12 @@ class SnakeServer(private val serverConfig: ServerConfig) : Publisher(), Subscri
             SnakeProto.NodeRole.VIEWER -> {
                 when (players[msg.senderId]!!.role) {
                     SnakeProto.NodeRole.NORMAL -> {
-                        players[msg.senderId]?.role = SnakeProto.NodeRole.VIEWER
+                        players[msg.senderId]?.role = msg.roleChange.senderRole
                         gameCore.removePlayer(msg.senderId)
                     }
                     SnakeProto.NodeRole.DEPUTY -> {
                         selectNewDeputy()
-                        players[msg.senderId]?.role = SnakeProto.NodeRole.VIEWER
+                        players[msg.senderId]?.role = msg.roleChange.senderRole
                         gameCore.removePlayer(msg.senderId)
                     }
                     SnakeProto.NodeRole.MASTER -> {
@@ -228,7 +233,16 @@ class SnakeServer(private val serverConfig: ServerConfig) : Publisher(), Subscri
                 return
             }
         }
+        val changeAccept = SnakeProto.GameMessage.newBuilder()
+            .setRoleChange(
+                SnakeProto.GameMessage.RoleChangeMsg.newBuilder().setReceiverRole(message.msg.roleChange.senderRole)
+            ).setMsgSeq(MessageIdProvider.getNextMessageId())
+            .setReceiverId(message.msg.senderId)
+            .build()
+        netWorker.putMessage(changeAccept, message.ip, message.port)
+
     }
+
 
     private fun selectNewDeputy() {
         for (pair in players) {
@@ -304,5 +318,25 @@ class SnakeServer(private val serverConfig: ServerConfig) : Publisher(), Subscri
         netWorker.subscribe(this, SnakeProto.GameMessage.TypeCase.STEER)
         netWorker.subscribe(this, SnakeProto.GameMessage.TypeCase.ERROR)
         netWorker.subscribe(this, SnakeProto.GameMessage.TypeCase.ROLE_CHANGE)
+    }
+
+    private constructor(serverConfig: ServerConfig, core: GameCore, masterId: Int) : this(serverConfig) {
+        this.masterId = masterId
+        this.gameCore = core
+    }
+
+    companion object {
+        fun fromProto(state: SnakeProto.GameState, masterId: Int): SnakeServer {
+            //TODO not yet implemented
+            val serverConfig = ServerConfig(
+                stateTickDelayMs = state.config.stateDelayMs,
+                pingDelayMs = state.config.pingDelayMs,
+                timeoutDelayMs = state.config.nodeTimeoutMs,
+                playfieldWidth = state.config.width,
+                playfieldHeight = state.config.height
+            )
+
+            return SnakeServer(serverConfig, SnakeGameCore.fromProtoState(state), masterId)
+        }
     }
 }

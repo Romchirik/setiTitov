@@ -1,10 +1,10 @@
 package nsu.titov.net.client
 
-import nsu.titov.net.ConnectionEndpoint
-import nsu.titov.net.Message
-import nsu.titov.net.NetWorker
-import nsu.titov.net.SocketEndpoint
+import nsu.titov.net.*
+import nsu.titov.net.crutch.ErrorManager
 import nsu.titov.proto.SnakeProto
+import nsu.titov.settings.SettingsProvider
+import nsu.titov.utils.MessageIdProvider
 import java.net.InetAddress
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedDeque
@@ -15,7 +15,7 @@ class ClientThreadNetWorker : NetWorker {
 
     private val outgoingQueue: Deque<Message> = ConcurrentLinkedDeque()
 
-    private var pendingMessage: Message? = null
+    private var pendingMessage: MessageWrapper? = null
     private var running = true
 
     constructor() : super(SocketEndpoint(0))
@@ -29,25 +29,63 @@ class ClientThreadNetWorker : NetWorker {
 
     override fun run() {
         while (running) {
+
+            //sending messages
             if (outgoingQueue.isNotEmpty() && pendingMessage == null) {
                 val message = outgoingQueue.poll()
                 sendMessage(message)
+
+                if (message.msg.typeCase != SnakeProto.GameMessage.TypeCase.ACK &&
+                    message.msg.typeCase != SnakeProto.GameMessage.TypeCase.ANNOUNCEMENT
+                ) {
+                    pendingMessage = MessageWrapper(message, System.currentTimeMillis(), System.currentTimeMillis())
+                }
+
             }
 
-            val message = receiveMessage()
-            if (message != null) {
-                sendAck(message)
-                if (message.msg.typeCase == SnakeProto.GameMessage.TypeCase.ACK) {
-                    if (pendingMessage != null) {
-                        if (pendingMessage!!.msg.msgSeq <= message.msg.msgSeq) {
+
+            //receiving messages
+            val incMessage = receiveMessage()
+
+            if (incMessage != null) {
+                sendAck(incMessage)
+                logger.trace { "Received new message type of: ${incMessage.msg.typeCase}, from ${incMessage.ip}" }
+                notifyMembers(incMessage, incMessage.msg.typeCase)
+                if (incMessage.msg.typeCase == SnakeProto.GameMessage.TypeCase.ACK) {
+                    if (null != pendingMessage) {
+                        if (pendingMessage!!.message.msg.msgSeq <= incMessage.msg.msgSeq) {
                             pendingMessage = null
-                            logger.trace { "Message (msgSeq: ${message.msg.msgSeq}) confirmed" }
                         }
                     }
                 }
-                logger.trace { "Received new message type of: ${message.msg.typeCase}, from ${message.ip}" }
-                notifyMembers(message, message.msg.typeCase)
             }
+
+
+            //checking for timeouts and resending
+            var serverProblems = false
+            if (pendingMessage != null) {
+                if (System.currentTimeMillis() - pendingMessage!!.firstSendTime > SettingsProvider.getSettings().timeoutDelayMs) {
+                    serverProblems = true
+                } else {
+                    if (System.currentTimeMillis() - pendingMessage!!.resendTime > SettingsProvider.getSettings().pingDelayMs) {
+                        sendMessage(pendingMessage!!.message)
+                        pendingMessage!!.resendTime = System.currentTimeMillis()
+                    }
+                }
+            }
+
+            if (serverProblems) {
+                val error = SnakeProto.GameMessage.newBuilder().setError(
+                    SnakeProto.GameMessage.ErrorMsg.newBuilder().setErrorMessage(
+                        ErrorManager.wrap(-1)
+                    )
+                )
+                    .setMsgSeq(MessageIdProvider.getNextMessageId())
+                    .build()
+                notifyMembers(Message(error, InetAddress.getLoopbackAddress(), -1), error.typeCase)
+                pendingMessage = null
+            }
+
         }
     }
 

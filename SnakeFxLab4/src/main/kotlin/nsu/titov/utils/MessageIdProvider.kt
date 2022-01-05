@@ -10,15 +10,7 @@ object MessageIdProvider {
     }
 
     @Synchronized
-    fun getLocalProvider(initialId: Long): LocalMessageIdProvider {
-        return LocalMessageIdProvider(initialId)
-    }
-
-    class LocalMessageIdProvider {
-        private var nextMessageId: Long = 0L;
-
-        constructor(initialId: Long) {
-
-        }
+    fun nextMessageId(): Long {
+        return nextMessageId
     }
 }
