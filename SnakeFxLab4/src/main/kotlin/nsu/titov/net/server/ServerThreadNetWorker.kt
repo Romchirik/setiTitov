@@ -32,7 +32,7 @@ class ServerThreadNetWorker : NetWorker {
 
     override fun shutdown() {
         running = false
-        logger.debug { "Network thread will be finished as soon as possible" }
+        logger.info { "Shutting down server networker" }
     }
 
 
@@ -47,13 +47,10 @@ class ServerThreadNetWorker : NetWorker {
 
 
     override fun run() {
-        while (running) {
+        while (running && !Thread.interrupted()) {
             for (queue in messageQueue) {
                 if (queue.value.isNotEmpty() && pendingMessages[queue.key] == null) {
                     val message = queue.value.poll()
-                    if (message.msg.typeCase == SnakeProto.GameMessage.TypeCase.ACK) {
-                        println("Hui")
-                    }
                     sendMessage(message)
                     if (message.msg.typeCase != SnakeProto.GameMessage.TypeCase.ACK &&
                         message.msg.typeCase != SnakeProto.GameMessage.TypeCase.ANNOUNCEMENT
@@ -113,5 +110,6 @@ class ServerThreadNetWorker : NetWorker {
                 messageQueue.remove(player.ip)
             }
         }
+        shutdown()
     }
 }

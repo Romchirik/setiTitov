@@ -3,6 +3,8 @@ package nsu.titov.server
 import nsu.titov.core.Snake
 import nsu.titov.core.data.Point
 import nsu.titov.proto.SnakeProto
+import nsu.titov.settings.Settings
+import nsu.titov.settings.SettingsProvider
 import nsu.titov.utils.GameStateIdProvider
 import nsu.titov.utils.pointToCoord
 
@@ -37,7 +39,11 @@ class StateBuilder private constructor() {
 
         val config = SnakeProto.GameConfig.newBuilder()
             .setHeight(config!!.playfieldHeight)
-            .setWidth(config!!.playfieldWidth).build()
+            .setWidth(config!!.playfieldWidth)
+            .setStateDelayMs(SettingsProvider.getSettings().stateTickDelayMs)
+            .setNodeTimeoutMs(SettingsProvider.getSettings().timeoutDelayMs)
+            .setPingDelayMs(SettingsProvider.getSettings().pingDelayMs)
+            .build()
 
         val state = SnakeProto.GameState.newBuilder()
             .setStateOrder(GameStateIdProvider.getNextStateId())

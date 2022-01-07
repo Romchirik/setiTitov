@@ -13,9 +13,11 @@ import nsu.titov.net.crutch.ErrorManager
 import nsu.titov.net.server.ServerThreadNetWorker
 import nsu.titov.proto.SnakeProto
 import nsu.titov.settings.SettingsProvider
+import nsu.titov.utils.GameStateIdProvider
 import nsu.titov.utils.MessageIdProvider
 import nsu.titov.utils.PlayerIdProvider
 import java.net.InetAddress
+import java.util.Collections.max
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -222,25 +224,7 @@ class SnakeServer(private val serverConfig: ServerConfig) : Publisher(), Subscri
                         gameCore.removePlayer(msg.senderId)
                     }
                     SnakeProto.NodeRole.MASTER -> {
-                        var deputy: ServerPlayerInfo? = null
-                        players.forEach { (_, player) ->
-                            if (player.role == SnakeProto.NodeRole.DEPUTY) deputy = player
-                        }
-
-                        if (deputy == null) {
-                            shutdownServer()
-                        } else {
-                            logger.info { "Master left, trying to change topology" }
-                            val changeAccept = SnakeProto.GameMessage.newBuilder()
-                                .setRoleChange(
-                                    SnakeProto.GameMessage.RoleChangeMsg.newBuilder()
-                                        .setReceiverRole(SnakeProto.NodeRole.MASTER)
-                                ).setMsgSeq(MessageIdProvider.getNextMessageId())
-                                .setReceiverId(deputy!!.id)
-                                .build()
-                            netWorker.putMessage(changeAccept, deputy!!.addressInet, deputy!!.port)
-                        }
-
+                        shutdown()
                     }
                     else -> {
                         logger.error {
@@ -265,11 +249,6 @@ class SnakeServer(private val serverConfig: ServerConfig) : Publisher(), Subscri
         netWorker.putMessage(changeAccept, message.ip, message.port)
 
     }
-
-    private fun shutdownServer() {
-
-    }
-
 
     private fun selectNewDeputy() {
         for (pair in players) {
@@ -301,17 +280,39 @@ class SnakeServer(private val serverConfig: ServerConfig) : Publisher(), Subscri
 
 
     override fun run() {
-        initialize()
-
-        while (running) {
-            Thread.sleep(1000)
+        try {
+            initialize()
+            while (running) {
+                Thread.sleep(10000)
+            }
+        } catch (_: InterruptedException) {
+            shutdown()
         }
-
-        netWorker.shutdown()
-        netWorkerThread.join()
     }
 
-    override fun stop() {
+    override fun shutdown() {
+
+        var deputy: ServerPlayerInfo? = null
+        players.forEach { (_, player) ->
+            if (player.role == SnakeProto.NodeRole.DEPUTY) deputy = player
+        }
+
+        if (null != deputy) {
+            logger.info { "Master left, trying to change topology" }
+            val changeAccept = SnakeProto.GameMessage.newBuilder()
+                .setRoleChange(
+                    SnakeProto.GameMessage.RoleChangeMsg.newBuilder()
+                        .setReceiverRole(SnakeProto.NodeRole.MASTER)
+                ).setMsgSeq(MessageIdProvider.getNextMessageId())
+                .setReceiverId(deputy!!.id)
+                .build()
+            netWorker.putMessage(changeAccept, deputy!!.addressInet, deputy!!.port)
+        }
+
+        Thread.sleep(1000)
+        netWorker.shutdown()
+        netWorkerThread.join()
+
         running = false
         timersPool.shutdown()
     }
@@ -354,7 +355,9 @@ class SnakeServer(private val serverConfig: ServerConfig) : Publisher(), Subscri
 
     companion object {
         fun fromProto(state: SnakeProto.GameState, masterId: Int): SnakeServer {
-            //TODO not yet implemented
+            GameStateIdProvider.setNextStateId(state.stateOrder)
+            val ids = state.players.playersList.map { gamePlayer -> gamePlayer.id }
+            PlayerIdProvider.setNextPlayerId(max(ids))
             val serverConfig = ServerConfig(
                 stateTickDelayMs = state.config.stateDelayMs,
                 pingDelayMs = state.config.pingDelayMs,

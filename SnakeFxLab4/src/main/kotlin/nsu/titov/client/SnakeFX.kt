@@ -177,7 +177,7 @@ class SnakeFX : Initializable, Subscriber {
     }
 
     fun handleJoinGame() {
-        if (StateProvider.getState().role != NodeRole.VIEWER) {
+        if (StateProvider.getState().role != NodeRole.VIEWER && StateProvider.getState().serverPort > 0) {
             logger.warn { "Already joined game" }
             return
         }
@@ -190,7 +190,7 @@ class SnakeFX : Initializable, Subscriber {
     override fun update(message: Message) {
         when (message.msg.typeCase) {
             GameMessage.TypeCase.STATE -> {
-                if((StateProvider.getState().lastGameState?.stateOrder ?: -1) < message.msg.state.state.stateOrder){
+                if ((StateProvider.getState().lastGameState?.stateOrder ?: -1) < message.msg.state.state.stateOrder) {
                     StateProvider.getState().lastGameState = message.msg.state.state
                 }
             }
@@ -213,11 +213,12 @@ class SnakeFX : Initializable, Subscriber {
     private fun handleRoleChange(message: Message) {
         StateProvider.getState().role = message.msg.roleChange.receiverRole
         if (message.msg.roleChange.receiverRole == NodeRole.MASTER && !SnakeServerUtils.isRunning()) {
+            logger.info { "Master left from game, trying to restore topology" }
             restoreServerLocal()
             return
         }
 
-        if(message.msg.roleChange.senderRole == NodeRole.MASTER) {
+        if (message.msg.roleChange.senderRole == NodeRole.MASTER) {
             changeServer(message.ip, message.port)
         }
     }
@@ -241,6 +242,15 @@ class SnakeFX : Initializable, Subscriber {
         StateProvider.getState().serverPort = message.port
         StateProvider.getState().id = message.msg.receiverId
         netWorker.unsubscribe(this, GameMessage.TypeCase.ACK)
+    }
+
+    private fun pingServer() {
+        if (StateProvider.getState().role != NodeRole.VIEWER && StateProvider.getState().serverPort > 0) {
+            val message = GameMessage.newBuilder().setPing(GameMessage.PingMsg.getDefaultInstance())
+                .setMsgSeq(MessageIdProvider.getNextMessageId())
+                .build()
+            netWorker.putMessage(message, StateProvider.getState().serverAddress, StateProvider.getState().serverPort)
+        }
     }
 
     override fun initialize(location: URL?, resources: ResourceBundle?) {
@@ -286,6 +296,13 @@ class SnakeFX : Initializable, Subscriber {
             initialDelay = 0L,
             period = SettingsProvider.getSettings().announceDelayMs.toLong()
         ) { fireAnnounceUpdate() }
+        fixedRateTimer(
+            name = "Client ping timer",
+            daemon = true,
+            initialDelay = 0L,
+            period = SettingsProvider.getSettings().announceDelayMs.toLong()
+        ) { pingServer() }
 
     }
+
 }

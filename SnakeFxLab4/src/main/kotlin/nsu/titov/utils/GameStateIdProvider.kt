@@ -1,11 +1,16 @@
 package nsu.titov.utils
 
 object GameStateIdProvider {
-    private var NextStateId: Int = 0
+    private var nextStateId: Int = 0
+
+    @Synchronized
+    fun setNextStateId(id: Int) {
+        nextStateId = id
+    }
 
     @Synchronized
     fun getNextStateId(): Int {
-        NextStateId++
-        return NextStateId - 1
+        nextStateId++
+        return nextStateId - 1
     }
 }

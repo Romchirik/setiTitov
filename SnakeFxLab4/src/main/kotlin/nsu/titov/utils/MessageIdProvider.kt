@@ -4,6 +4,10 @@ object MessageIdProvider {
     private var nextMessageId: Long = 0L;
 
     @Synchronized
+    fun setNextMessageId(id: Long) {
+        nextMessageId = id
+    }
+    @Synchronized
     fun getNextMessageId(): Long {
         nextMessageId++
         return nextMessageId - 1L

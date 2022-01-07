@@ -1,6 +1,6 @@
 package nsu.titov.server
 
 interface Server: Runnable{
-    fun stop()
+    fun shutdown()
     fun getPort(): Int
 }

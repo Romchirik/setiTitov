@@ -29,30 +29,30 @@ class AnnounceHandler : Publisher(), Runnable {
 
 
     override fun run() {
-        try {
-            initialize()
-            while (running) {
-                val packet = DatagramPacket(ByteArray(BUFFER_SIZE), BUFFER_SIZE)
-                try {
-                    socket.soTimeout = SettingsProvider.getSettings().announceDelayMs
-                    socket.receive(packet)
-                } catch (_: SocketTimeoutException) {
-                    continue
-                }
+        initialize()
+        while (running && !Thread.interrupted()) {
+            val packet = DatagramPacket(ByteArray(BUFFER_SIZE), BUFFER_SIZE)
 
-                val message = SnakeProto.GameMessage.parseFrom(Arrays.copyOf(packet.data, packet.length))!!
-                if (message.typeCase != SnakeProto.GameMessage.TypeCase.ANNOUNCEMENT) {
-                    logger.error { "Announcer received not an announce message" }
-                    continue
-                }
-                notifyMembers(
-                    Message(message, packet.address, packet.port),
-                    SnakeProto.GameMessage.TypeCase.ANNOUNCEMENT
-                )
+            try {
+                socket.soTimeout = SettingsProvider.getSettings().announceDelayMs
+                socket.receive(packet)
+            } catch (_: SocketTimeoutException) {
+                continue
             }
-        } catch (_: InterruptedException) {
-            shutdown()
+
+
+            val message = SnakeProto.GameMessage.parseFrom(Arrays.copyOf(packet.data, packet.length))!!
+            if (message.typeCase != SnakeProto.GameMessage.TypeCase.ANNOUNCEMENT) {
+                logger.error { "Announcer received not an announce message" }
+                continue
+            }
+            notifyMembers(
+                Message(message, packet.address, packet.port),
+                SnakeProto.GameMessage.TypeCase.ANNOUNCEMENT
+            )
         }
+
+        shutdown()
     }
 
     private fun initialize() {
@@ -61,6 +61,7 @@ class AnnounceHandler : Publisher(), Runnable {
 
     @Synchronized
     fun shutdown() {
+        logger.info { "Shutting down announcer thread" }
         socket.leaveGroup(multicastAddress)
         running = false
     }

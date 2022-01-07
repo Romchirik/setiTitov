@@ -1,9 +1,7 @@
 package nsu.titov.app
 
 import javafx.application.Application
-import javafx.event.Event
 import javafx.event.EventHandler
-import javafx.event.EventType
 import javafx.fxml.FXMLLoader
 import javafx.scene.Parent
 import javafx.scene.Scene
@@ -11,6 +9,7 @@ import javafx.stage.Stage
 import mu.KotlinLogging
 import nsu.titov.server.SnakeServerUtils
 import nsu.titov.settings.SettingsProvider
+import nsu.titov.utils.ThreadManager
 
 
 class App : Application() {
@@ -25,7 +24,12 @@ class App : Application() {
         val tmp = Scene(view)
 
 
-        stage.onCloseRequest = EventHandler { run { SnakeServerUtils.stopServer() } }
+        stage.onCloseRequest = EventHandler {
+            run {
+                SnakeServerUtils.stopServer()
+                ThreadManager.shutdown()
+            }
+        }
         stage.scene = tmp
         stage.show()
     }

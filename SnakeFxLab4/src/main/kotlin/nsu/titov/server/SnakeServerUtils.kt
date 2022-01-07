@@ -36,8 +36,7 @@ object SnakeServerUtils {
     @Synchronized
     fun stopServer() {
         if (serverThread != null) {
-            server?.stop()
-            serverThread?.join()
+            serverThread?.interrupt()
             logger.info { "Server stopped successfully" }
         }
     }
