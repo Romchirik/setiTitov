@@ -21,22 +21,16 @@ object SnakeServerUtils {
 
     @Synchronized
     fun startServer(serverConfig: ServerConfig) {
-        //TODO getting server config and starting server
-        if (serverThread == null) {
-            server = SnakeServer(serverConfig)
-            serverThread = Thread(server, "Snake server")
-            serverThread?.start()
-        }
+        server = SnakeServer(serverConfig)
+        serverThread = Thread(server, "Snake server")
+        serverThread?.start()
     }
 
     @Synchronized
-    fun restoreServer(message: SnakeProto.GameMessage.StateMsg) {
-        if (serverThread == null) {
-            server = SnakeServer.fromProto(message.state, StateProvider.getState().id)
-            serverThread = Thread(server, "Snake server")
-            serverThread?.start()
-        }
-
+    fun restoreServer(message: SnakeProto.GameState) {
+        server = SnakeServer.fromProto(message, StateProvider.getState().id)
+        serverThread = Thread(server, "Snake server")
+        serverThread?.start()
     }
 
     @Synchronized

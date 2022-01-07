@@ -1,6 +1,7 @@
 package nsu.titov.server
 
 import mu.KotlinLogging
+import nsu.titov.client.StateProvider
 import nsu.titov.core.GameCore
 import nsu.titov.core.SnakeGameCore
 import nsu.titov.core.data.CoreConfig
@@ -15,6 +16,7 @@ import nsu.titov.settings.SettingsProvider
 import nsu.titov.utils.MessageIdProvider
 import nsu.titov.utils.PlayerIdProvider
 import java.net.InetAddress
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
@@ -35,7 +37,7 @@ class SnakeServer(private val serverConfig: ServerConfig) : Publisher(), Subscri
     private val netWorker: NetWorker = ServerThreadNetWorker()
     private val netWorkerThread = Thread(netWorker, "Server net worker")
     private var running: Boolean = true
-    private val players: MutableMap<Int, ServerPlayerInfo> = HashMap()
+    private val players: MutableMap<Int, ServerPlayerInfo> = ConcurrentHashMap()
 
     private var masterId: Int = 0
     private val timersPool = ScheduledThreadPoolExecutor(1)
@@ -83,12 +85,11 @@ class SnakeServer(private val serverConfig: ServerConfig) : Publisher(), Subscri
             .build()
 
 
-        val gameMsg = SnakeProto.GameMessage.newBuilder()
+        val gameMsgBuilder = SnakeProto.GameMessage.newBuilder()
             .setMsgSeq(MessageIdProvider.getNextMessageId())
             .setState(state)
-            .build()
         players.forEach { (_, player) ->
-            netWorker.putMessage(gameMsg, player.addressInet, player.port)
+            netWorker.putMessage(gameMsgBuilder.setReceiverId(player.id).build(), player.addressInet, player.port)
         }
 
         players.forEach { (id, _) ->
@@ -110,7 +111,9 @@ class SnakeServer(private val serverConfig: ServerConfig) : Publisher(), Subscri
             .setRoleChange(
                 SnakeProto.GameMessage.RoleChangeMsg.newBuilder().setReceiverRole(SnakeProto.NodeRole.VIEWER)
                     .build()
-            ).setMsgSeq(MessageIdProvider.getNextMessageId()).build()
+            )
+            .setReceiverId(id)
+            .setMsgSeq(MessageIdProvider.getNextMessageId()).build()
 
         netWorker.putMessage(message, players[id]!!.addressInet, players[id]!!.port)
         players[id]!!.role = SnakeProto.NodeRole.VIEWER
@@ -158,7 +161,7 @@ class SnakeServer(private val serverConfig: ServerConfig) : Publisher(), Subscri
 
         logger.info { "New player accepted id: $newId" }
 
-        if(players.size == 2) {
+        if (players.size == 2) {
             selectNewDeputy()
         }
     }
@@ -209,15 +212,35 @@ class SnakeServer(private val serverConfig: ServerConfig) : Publisher(), Subscri
                 when (players[msg.senderId]!!.role) {
                     SnakeProto.NodeRole.NORMAL -> {
                         players[msg.senderId]?.role = msg.roleChange.senderRole
+                        players.remove(msg.senderId)
                         gameCore.removePlayer(msg.senderId)
                     }
                     SnakeProto.NodeRole.DEPUTY -> {
                         selectNewDeputy()
                         players[msg.senderId]?.role = msg.roleChange.senderRole
+                        players.remove(msg.senderId)
                         gameCore.removePlayer(msg.senderId)
                     }
                     SnakeProto.NodeRole.MASTER -> {
-                        //TODO доделать хуйню
+                        var deputy: ServerPlayerInfo? = null
+                        players.forEach { (_, player) ->
+                            if (player.role == SnakeProto.NodeRole.DEPUTY) deputy = player
+                        }
+
+                        if (deputy == null) {
+                            shutdownServer()
+                        } else {
+                            logger.info { "Master left, trying to change topology" }
+                            val changeAccept = SnakeProto.GameMessage.newBuilder()
+                                .setRoleChange(
+                                    SnakeProto.GameMessage.RoleChangeMsg.newBuilder()
+                                        .setReceiverRole(SnakeProto.NodeRole.MASTER)
+                                ).setMsgSeq(MessageIdProvider.getNextMessageId())
+                                .setReceiverId(deputy!!.id)
+                                .build()
+                            netWorker.putMessage(changeAccept, deputy!!.addressInet, deputy!!.port)
+                        }
+
                     }
                     else -> {
                         logger.error {
@@ -240,6 +263,10 @@ class SnakeServer(private val serverConfig: ServerConfig) : Publisher(), Subscri
             .setReceiverId(message.msg.senderId)
             .build()
         netWorker.putMessage(changeAccept, message.ip, message.port)
+
+    }
+
+    private fun shutdownServer() {
 
     }
 
@@ -280,7 +307,7 @@ class SnakeServer(private val serverConfig: ServerConfig) : Publisher(), Subscri
             Thread.sleep(1000)
         }
 
-        netWorker.stop()
+        netWorker.shutdown()
         netWorkerThread.join()
     }
 
@@ -335,8 +362,39 @@ class SnakeServer(private val serverConfig: ServerConfig) : Publisher(), Subscri
                 playfieldWidth = state.config.width,
                 playfieldHeight = state.config.height
             )
+            val newServer = SnakeServer(serverConfig, SnakeGameCore.fromProtoState(state), masterId)
+            state.players.playersList.forEach { gamePlayer ->
+                newServer.players[gamePlayer.id] = ServerPlayerInfo(
+                    name = gamePlayer.name,
+                    id = gamePlayer.id,
+                    address = gamePlayer.ipAddress,
+                    port = gamePlayer.port,
+                    role = if (StateProvider.getState().id == gamePlayer.id) SnakeProto.NodeRole.MASTER else gamePlayer.role,
+                    score = gamePlayer.score,
+                    playerType = gamePlayer.type,
+                    connected = true
+                )
+            }
+            newServer.masterId = StateProvider.getState().id
 
-            return SnakeServer(serverConfig, SnakeGameCore.fromProtoState(state), masterId)
+            val notifyBuilder = SnakeProto.GameMessage.newBuilder()
+                .setRoleChange(
+                    SnakeProto.GameMessage.RoleChangeMsg.newBuilder().setSenderRole(SnakeProto.NodeRole.MASTER)
+                        .build()
+                )
+                .setMsgSeq(MessageIdProvider.getNextMessageId())
+
+            newServer.players.forEach { (id, player) ->
+                if (player.role != SnakeProto.NodeRole.DEPUTY) {
+                    newServer.netWorker.putMessage(
+                        notifyBuilder.setReceiverId(id).build(),
+                        player.addressInet,
+                        player.port
+                    )
+                }
+            }
+
+            return newServer
         }
     }
 }

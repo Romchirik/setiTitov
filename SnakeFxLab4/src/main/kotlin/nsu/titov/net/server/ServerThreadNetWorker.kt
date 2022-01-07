@@ -30,7 +30,7 @@ class ServerThreadNetWorker : NetWorker {
 
     }
 
-    override fun stop() {
+    override fun shutdown() {
         running = false
         logger.debug { "Network thread will be finished as soon as possible" }
     }
@@ -41,13 +41,17 @@ class ServerThreadNetWorker : NetWorker {
         return this
     }
 
+    override fun clearQueue(): Deque<Message> {
+        return ConcurrentLinkedDeque()
+    }
+
 
     override fun run() {
         while (running) {
             for (queue in messageQueue) {
                 if (queue.value.isNotEmpty() && pendingMessages[queue.key] == null) {
                     val message = queue.value.poll()
-                    if(message.msg.typeCase == SnakeProto.GameMessage.TypeCase.ACK) {
+                    if (message.msg.typeCase == SnakeProto.GameMessage.TypeCase.ACK) {
                         println("Hui")
                     }
                     sendMessage(message)

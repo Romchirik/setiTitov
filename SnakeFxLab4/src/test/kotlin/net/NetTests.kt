@@ -14,7 +14,7 @@ class NetTests {
         }
 
 
-        netWorker.stop()
+        netWorker.shutdown()
         thread.join()
     }
 

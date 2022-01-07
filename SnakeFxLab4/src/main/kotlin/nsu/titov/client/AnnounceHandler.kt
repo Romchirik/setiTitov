@@ -11,7 +11,7 @@ import java.net.MulticastSocket
 import java.net.SocketTimeoutException
 import java.util.*
 
-class AnnounceHandler() : Publisher(), Runnable {
+class AnnounceHandler : Publisher(), Runnable {
     private val multicastAddress: InetAddress
     private val multicastPort: Int
     private val socket: MulticastSocket
@@ -29,22 +29,29 @@ class AnnounceHandler() : Publisher(), Runnable {
 
 
     override fun run() {
-        initialize()
-        while (running) {
-            val packet = DatagramPacket(ByteArray(BUFFER_SIZE), BUFFER_SIZE)
-            try {
-                socket.soTimeout = SettingsProvider.getSettings().announceDelayMs
-                socket.receive(packet)
-            } catch (_: SocketTimeoutException) {
-                continue
-            }
+        try {
+            initialize()
+            while (running) {
+                val packet = DatagramPacket(ByteArray(BUFFER_SIZE), BUFFER_SIZE)
+                try {
+                    socket.soTimeout = SettingsProvider.getSettings().announceDelayMs
+                    socket.receive(packet)
+                } catch (_: SocketTimeoutException) {
+                    continue
+                }
 
-            val message = SnakeProto.GameMessage.parseFrom(Arrays.copyOf(packet.data, packet.length))!!
-            if (message.typeCase != SnakeProto.GameMessage.TypeCase.ANNOUNCEMENT) {
-                logger.error { "Announcer received not an announce message" }
-                continue
+                val message = SnakeProto.GameMessage.parseFrom(Arrays.copyOf(packet.data, packet.length))!!
+                if (message.typeCase != SnakeProto.GameMessage.TypeCase.ANNOUNCEMENT) {
+                    logger.error { "Announcer received not an announce message" }
+                    continue
+                }
+                notifyMembers(
+                    Message(message, packet.address, packet.port),
+                    SnakeProto.GameMessage.TypeCase.ANNOUNCEMENT
+                )
             }
-            notifyMembers(Message(message, packet.address, packet.port), SnakeProto.GameMessage.TypeCase.ANNOUNCEMENT)
+        } catch (_: InterruptedException) {
+            shutdown()
         }
     }
 
@@ -52,7 +59,8 @@ class AnnounceHandler() : Publisher(), Runnable {
         socket.joinGroup(multicastAddress)
     }
 
-    fun stop() {
+    @Synchronized
+    fun shutdown() {
         socket.leaveGroup(multicastAddress)
         running = false
     }

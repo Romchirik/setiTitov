@@ -27,65 +27,76 @@ class ClientThreadNetWorker : NetWorker {
         return this
     }
 
+    override fun clearQueue(): Deque<Message> {
+        val tmp = ArrayDeque(outgoingQueue)
+        outgoingQueue.clear()
+        return tmp
+    }
+
     override fun run() {
-        while (running) {
+        try {
+            while (running) {
 
-            //sending messages
-            if (outgoingQueue.isNotEmpty() && pendingMessage == null) {
-                val message = outgoingQueue.poll()
-                sendMessage(message)
+                //sending messages
+                if (outgoingQueue.isNotEmpty() && pendingMessage == null) {
+                    val message = outgoingQueue.poll()
+                    sendMessage(message)
 
-                if (message.msg.typeCase != SnakeProto.GameMessage.TypeCase.ACK &&
-                    message.msg.typeCase != SnakeProto.GameMessage.TypeCase.ANNOUNCEMENT
-                ) {
-                    pendingMessage = MessageWrapper(message, System.currentTimeMillis(), System.currentTimeMillis())
+                    if (message.msg.typeCase != SnakeProto.GameMessage.TypeCase.ACK &&
+                        message.msg.typeCase != SnakeProto.GameMessage.TypeCase.ANNOUNCEMENT
+                    ) {
+                        pendingMessage = MessageWrapper(message, System.currentTimeMillis(), System.currentTimeMillis())
+                    }
+
                 }
 
-            }
 
+                //receiving messages
+                val incMessage = receiveMessage()
 
-            //receiving messages
-            val incMessage = receiveMessage()
+                if (incMessage != null) {
+                    sendAck(incMessage)
+                    logger.trace { "Received new message type of: ${incMessage.msg.typeCase}, from ${incMessage.ip}" }
+                    notifyMembers(incMessage, incMessage.msg.typeCase)
 
-            if (incMessage != null) {
-                sendAck(incMessage)
-                logger.trace { "Received new message type of: ${incMessage.msg.typeCase}, from ${incMessage.ip}" }
-                notifyMembers(incMessage, incMessage.msg.typeCase)
-                if (incMessage.msg.typeCase == SnakeProto.GameMessage.TypeCase.ACK) {
-                    if (null != pendingMessage) {
-                        if (pendingMessage!!.message.msg.msgSeq <= incMessage.msg.msgSeq) {
-                            pendingMessage = null
+                    if (incMessage.msg.typeCase == SnakeProto.GameMessage.TypeCase.ACK) {
+                        if (null != pendingMessage) {
+                            if (pendingMessage!!.message.msg.msgSeq <= incMessage.msg.msgSeq) {
+                                pendingMessage = null
+                            }
                         }
                     }
                 }
-            }
 
 
-            //checking for timeouts and resending
-            var serverProblems = false
-            if (pendingMessage != null) {
-                if (System.currentTimeMillis() - pendingMessage!!.firstSendTime > SettingsProvider.getSettings().timeoutDelayMs) {
-                    serverProblems = true
-                } else {
-                    if (System.currentTimeMillis() - pendingMessage!!.resendTime > SettingsProvider.getSettings().pingDelayMs) {
-                        sendMessage(pendingMessage!!.message)
-                        pendingMessage!!.resendTime = System.currentTimeMillis()
+                //checking for timeouts and resending
+                var serverProblems = false
+                if (pendingMessage != null) {
+                    if (System.currentTimeMillis() - pendingMessage!!.firstSendTime > SettingsProvider.getSettings().timeoutDelayMs) {
+                        serverProblems = true
+                    } else {
+                        if (System.currentTimeMillis() - pendingMessage!!.resendTime > SettingsProvider.getSettings().pingDelayMs) {
+                            sendMessage(pendingMessage!!.message)
+                            pendingMessage!!.resendTime = System.currentTimeMillis()
+                        }
                     }
                 }
-            }
 
-            if (serverProblems) {
-                val error = SnakeProto.GameMessage.newBuilder().setError(
-                    SnakeProto.GameMessage.ErrorMsg.newBuilder().setErrorMessage(
-                        ErrorManager.wrap(-1)
+                if (serverProblems) {
+                    val error = SnakeProto.GameMessage.newBuilder().setError(
+                        SnakeProto.GameMessage.ErrorMsg.newBuilder().setErrorMessage(
+                            ErrorManager.wrap(-1)
+                        )
                     )
-                )
-                    .setMsgSeq(MessageIdProvider.getNextMessageId())
-                    .build()
-                notifyMembers(Message(error, InetAddress.getLoopbackAddress(), -1), error.typeCase)
-                pendingMessage = null
-            }
+                        .setMsgSeq(MessageIdProvider.getNextMessageId())
+                        .build()
+                    notifyMembers(Message(error, InetAddress.getLoopbackAddress(), -1), error.typeCase)
+                    pendingMessage = null
+                }
 
+            }
+        } catch (_: InterruptedException) {
+            shutdown()
         }
     }
 
@@ -95,7 +106,7 @@ class ClientThreadNetWorker : NetWorker {
         logger.trace { "New message of type: ${message.typeCase} in queue, seq: ${message.msgSeq} " }
     }
 
-    override fun stop() {
+    override fun shutdown() {
         running = false
         logger.info { "Network thread will be finished as soon as possible" }
     }

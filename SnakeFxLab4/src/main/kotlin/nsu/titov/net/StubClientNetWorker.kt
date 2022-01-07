@@ -6,6 +6,8 @@ import nsu.titov.proto.SnakeProto.GameState.Coord
 import nsu.titov.proto.SnakeProto.GameState.Snake.SnakeState
 import nsu.titov.utils.MessageIdProvider
 import java.net.InetAddress
+import java.util.*
+import kotlin.collections.ArrayDeque
 
 
 class StubClientNetWorker(private val delay: Long) : NetWorker(StubEndpoint(0)), Runnable {
@@ -16,11 +18,15 @@ class StubClientNetWorker(private val delay: Long) : NetWorker(StubEndpoint(0)),
     }
 
 
-    override fun stop() {
+    override fun shutdown() {
         TODO("Not yet implemented")
     }
 
     override fun setEndpoint(endpoint: ConnectionEndpoint): NetWorker {
+        TODO("Not yet implemented")
+    }
+
+    override fun clearQueue(): Deque<Message> {
         TODO("Not yet implemented")
     }
 

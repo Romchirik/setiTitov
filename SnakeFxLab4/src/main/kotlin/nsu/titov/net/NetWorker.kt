@@ -12,8 +12,9 @@ abstract class NetWorker(protected var endpoint: ConnectionEndpoint) : Publisher
     protected val logger = KotlinLogging.logger {}
 
     abstract fun putMessage(message: SnakeProto.GameMessage, ip: InetAddress, port: Int)
-    abstract fun stop()
+    abstract fun shutdown()
     abstract fun setEndpoint(endpoint: ConnectionEndpoint): NetWorker
+    abstract fun clearQueue(): Deque<Message>
 
     fun getPort(): Int {
         return endpoint.getPort()
@@ -50,6 +51,7 @@ abstract class NetWorker(protected var endpoint: ConnectionEndpoint) : Publisher
 
         val ack = SnakeProto.GameMessage.newBuilder()
             .setAck(SnakeProto.GameMessage.AckMsg.getDefaultInstance())
+            .setReceiverId(message.msg.senderId)
             .setMsgSeq(message.msg.msgSeq)
             .build()
 

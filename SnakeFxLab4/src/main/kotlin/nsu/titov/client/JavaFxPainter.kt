@@ -122,8 +122,12 @@ class JavaFxPainter(bundle: Any) : Painter, Subscriber {
     override fun update(message: Message) {
         val msg = message.msg
         when (msg.typeCase) {
-            SnakeProto.GameMessage.TypeCase.STATE ->
-                Platform.runLater { repaint(msg.state) }
+            SnakeProto.GameMessage.TypeCase.STATE -> {
+                if ((StateProvider.getState().lastGameState?.stateOrder ?: 0) <= msg.state.state.stateOrder) {
+                    Platform.runLater { repaint(msg.state) }
+                }
+            }
+
             SnakeProto.GameMessage.TypeCase.ERROR -> {
                 Platform.runLater { addErrorMessage(msg.error) }
             }

@@ -19,6 +19,7 @@ import nsu.titov.server.ServerConfig
 import nsu.titov.server.SnakeServerUtils
 import nsu.titov.settings.SettingsProvider
 import nsu.titov.utils.MessageIdProvider
+import nsu.titov.utils.ThreadManager
 import java.net.InetAddress
 import java.net.URL
 import java.util.*
@@ -52,12 +53,6 @@ class SnakeFX : Initializable, Subscriber {
     private val availableServersList = FXCollections.observableArrayList<AnnounceItem>()
 
     private val availableServersBuffer = ArrayList<AnnounceItem>()
-    private val clearTimer = fixedRateTimer(
-        name = "Core tick timer",
-        daemon = true,
-        initialDelay = 0L,
-        period = SettingsProvider.getSettings().announceDelayMs.toLong()
-    ) { fireAnnounceUpdate() }
 
 
     private val netWorker: NetWorker = ClientThreadNetWorker()
@@ -170,6 +165,7 @@ class SnakeFX : Initializable, Subscriber {
     }
 
     private fun joinGame(announceItem: AnnounceItem) {
+        netWorker.subscribe(this, GameMessage.TypeCase.ACK)
         val joinMessage = GameMessage.newBuilder()
             .setJoin(
                 GameMessage.JoinMsg.newBuilder().setName(SettingsProvider.getSettings().playerName).build()
@@ -181,10 +177,11 @@ class SnakeFX : Initializable, Subscriber {
     }
 
     fun handleJoinGame() {
-        if (StateProvider.getState().id != 0) {
+        if (StateProvider.getState().role != NodeRole.VIEWER) {
             logger.warn { "Already joined game" }
             return
         }
+
         if (null != availableServers.selectionModel.selectedItem) {
             joinGame(availableServers.selectionModel.selectedItem)
         }
@@ -192,8 +189,13 @@ class SnakeFX : Initializable, Subscriber {
 
     override fun update(message: Message) {
         when (message.msg.typeCase) {
+            GameMessage.TypeCase.STATE -> {
+                if((StateProvider.getState().lastGameState?.stateOrder ?: -1) < message.msg.state.state.stateOrder){
+                    StateProvider.getState().lastGameState = message.msg.state.state
+                }
+            }
             GameMessage.TypeCase.ACK -> handleAck(message)
-            GameMessage.TypeCase.ROLE_CHANGE -> handleRoleChange(message.msg)
+            GameMessage.TypeCase.ROLE_CHANGE -> handleRoleChange(message)
             GameMessage.TypeCase.ANNOUNCEMENT -> handleAnnounce(message)
             GameMessage.TypeCase.ERROR -> handleError(message)
             else -> return
@@ -208,10 +210,29 @@ class SnakeFX : Initializable, Subscriber {
         availableServersBuffer.add(AnnounceItem.fromProto(msg))
     }
 
-    private fun handleRoleChange(message: GameMessage) {
-        StateProvider.getState().role = message.roleChange.receiverRole
-        if (message.roleChange.receiverRole == NodeRole.VIEWER) {
-            StateProvider.getState().id = 0
+    private fun handleRoleChange(message: Message) {
+        StateProvider.getState().role = message.msg.roleChange.receiverRole
+        if (message.msg.roleChange.receiverRole == NodeRole.MASTER && !SnakeServerUtils.isRunning()) {
+            restoreServerLocal()
+            return
+        }
+
+        if(message.msg.roleChange.senderRole == NodeRole.MASTER) {
+            changeServer(message.ip, message.port)
+        }
+    }
+
+
+    private fun restoreServerLocal() {
+        SnakeServerUtils.restoreServer(StateProvider.getState().lastGameState!!)
+    }
+
+    private fun changeServer(newAddress: InetAddress, newPort: Int) {
+        StateProvider.getState().serverAddress = newAddress
+        StateProvider.getState().serverPort = newPort
+
+        netWorker.clearQueue().forEach { message ->
+            netWorker.putMessage(message.msg, newAddress, newPort)
         }
     }
 
@@ -244,7 +265,6 @@ class SnakeFX : Initializable, Subscriber {
         availableServers.items = availableServersList
         availableServers.isEditable = false
 
-        netWorker.subscribe(this, GameMessage.TypeCase.ACK)
         netWorker.subscribe(this, GameMessage.TypeCase.ROLE_CHANGE)
         netWorker.subscribe(this, GameMessage.TypeCase.STATE)
         netWorker.subscribe(this, GameMessage.TypeCase.ERROR)
@@ -254,7 +274,18 @@ class SnakeFX : Initializable, Subscriber {
 
         announcer.subscribe(this, GameMessage.TypeCase.ANNOUNCEMENT)
 
+        ThreadManager.addThread(netWorkerThread)
+        ThreadManager.addThread(announcerThread)
+
         netWorkerThread.start()
         announcerThread.start()
+
+        fixedRateTimer(
+            name = "Core tick timer",
+            daemon = true,
+            initialDelay = 0L,
+            period = SettingsProvider.getSettings().announceDelayMs.toLong()
+        ) { fireAnnounceUpdate() }
+
     }
 }

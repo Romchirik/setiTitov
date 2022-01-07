@@ -9,13 +9,14 @@ import nsu.titov.proto.SnakeProto
 import nsu.titov.utils.coordToPoint
 import nsu.titov.utils.invertDir
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 
 class SnakeGameCore(private val config: CoreConfig) : GameCore {
     private val logger = KotlinLogging.logger {}
 
     //entities
-    private val snakes: MutableMap<Int, Snake> = HashMap()
-    private val players: MutableMap<Int, PlayerWrapper> = HashMap()
+    private val snakes: MutableMap<Int, Snake> = ConcurrentHashMap()
+    private var players: MutableMap<Int, PlayerWrapper> = ConcurrentHashMap()
     private val foods: MutableList<Point> = ArrayList()
     private val playfield: Playfield = Playfield(config.width, config.height)
 
@@ -73,7 +74,7 @@ class SnakeGameCore(private val config: CoreConfig) : GameCore {
             }
         }
 
-
+        players = players.filter { (id, _) -> snakes.containsKey(id)}.toMutableMap()
     }
 
     private fun generateFood(): Point {
