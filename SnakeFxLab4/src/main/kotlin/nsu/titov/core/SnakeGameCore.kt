@@ -107,7 +107,6 @@ class SnakeGameCore(private val config: CoreConfig) : GameCore {
             ?: logger.error { "Player with id: $id not found, unable put next turn" }
     }
 
-    //TODO доделать адекватное добавление игрока
     override fun addPlayer(id: Int, playerType: SnakeProto.PlayerType): Boolean {
         val player =
             PlayerWrapper(id = id, playerType = playerType, lastTurn = SnakeProto.Direction.DOWN)
@@ -144,7 +143,6 @@ class SnakeGameCore(private val config: CoreConfig) : GameCore {
     override fun getSnakes(): Map<Int, Snake> {
         return snakes
     }
-
 
     companion object {
         fun fromProtoState(state: SnakeProto.GameState): SnakeGameCore {
