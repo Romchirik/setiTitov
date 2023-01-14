@@ -3,8 +3,8 @@
     "screenSizeY": 720,
     "mainWindowTitle": "Snake FX",
 
-    "multicastAddress": "230.0.0.0",
-    "multicastPort": 4446,
+    "multicastAddress": "239.192.0.4",
+    "multicastPort": 9192,
     "announceDelayMs": 1000,
 
     "playerName": "Cum provider",
@@ -13,6 +13,6 @@
     "playfieldHeight": 30,
 
     "stateTickDelayMs": 100,
-    "pingDelayMs": 100,
-    "timeoutDelayMs": 1000000
+    "pingDelayMs": 50,
+    "timeoutDelayMs": 1000
 }
